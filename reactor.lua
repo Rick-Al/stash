@@ -49,8 +49,9 @@ end
 -- Function to display the menu and take user input
 local function showMenu()
     while true do
+        -- Only clear the status area when needed
         term.setCursorPos(1, 1)
-        term.clear()
+        term.clearLine()
         print("=== Reactor Control Panel ===")
 
         local status = reactor.getStatus()
@@ -67,7 +68,7 @@ local function showMenu()
         local waste = toPercent(wasteRaw)
         local damage = string.format("%.1f%%", damageRaw)
 
-        -- Print status
+        -- Print status only once
         print("Status: " .. (status and "RUNNING" or "SHUT DOWN"))
         print("Fuel Level: " .. fuel)
         print("Coolant Level: " .. coolant)
