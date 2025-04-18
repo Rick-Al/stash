@@ -1,79 +1,116 @@
--- Global variables
+-- Peripheral setup
 local reactor = peripheral.wrap("fissionReactorLogicAdapter_0")
-local speaker = peripheral.wrap("left")  -- Adjust based on your setup
+local speaker = peripheral.find("speaker")  -- Finds a connected speaker
 local autoScramTriggered = false
 local actionMessage = ""
 
--- Helper function to convert percentage from 0-1 to a readable 0-100% format
+-- Helper to format decimal values as percentages
 local function toPercent(value)
     return string.format("%.1f%%", value * 100)
 end
 
--- Function to blink warning and stop when acknowledged
+-- Determines if it's safe to start the reactor
+local function isReactorSafeToStart()
+    return reactor.getDamagePercent() <= 100
+       and reactor.getCoolantFilledPercentage() >= 0.10
+       and reactor.getHeatedCoolantFilledPercentage() <= 0.95
+       and reactor.getWasteFilledPercentage() <= 0.95
+end
+
+-- Alarm system
+local function playAlarm()
+    if speaker then
+        while autoScramTriggered do
+            speaker.playNote("harp", 3, 5)
+            sleep(5)
+        end
+    end
+end
+
 local function blinkWarning()
     local blink = true
     while autoScramTriggered do
-        term.setCursorPos(1, 16)
+        term.setCursorPos(1, 17)
         if blink then
             term.clearLine()
-            io.write("EMERGENCY SCRAM!")
+            io.write("!!! EMERGENCY SCRAM ACTIVE !!!")
         else
             term.clearLine()
         end
-        blink = not blink  -- Toggle visibility of the warning
-        sleep(0.5)  -- Blink every half second
+        blink = not blink
+        sleep(0.5)
     end
 end
 
--- Add an acknowledge function to stop the alarm and blinking
 local function waitForAcknowledge()
-    term.setCursorPos(1, 16) -- Move to the bottom
-    while true do
-        io.write("Press any key to acknowledge and stop alarm... > ")
-        local input = read()  -- Wait for user input
-        if input then
-            -- Acknowledge and stop alarm
-            autoScramTriggered = false  -- Stop blinking and alarm
-            term.clearLine()  -- Clear the warning
-            return  -- Exit the loop
-        end
-    end
+    term.setCursorPos(1, 18)
+    term.clearLine()
+    io.write("Press Enter to acknowledge and stop alarm... > ")
+    read()
+    autoScramTriggered = false
+    term.setCursorPos(1, 17)
+    term.clearLine()
+    term.setCursorPos(1, 18)
+    term.clearLine()
 end
 
--- Function to play alarm
-local function playAlarm()
-    if speaker then
-        -- Start playing the alarm sound repeatedly while active
-        while autoScramTriggered do
-            speaker.playNote("harp", 3, 5)  -- Play a note for 5 seconds
-            sleep(5)  -- Wait 5 seconds before playing again
-        end
-    end
-end
-
--- Function to display the menu and take user input
-local function showMenu()
+-- Status monitoring loop
+local function statusLoop()
     while true do
-        -- Only clear the status area when needed
-        term.setCursorPos(1, 1)
-        term.clearLine()
-        print("=== Reactor Control Panel ===")
-
         local status = reactor.getStatus()
-        local fuelRaw = reactor.getFuelFilledPercentage()
-        local coolantRaw = reactor.getCoolantFilledPercentage()
-        local heatedCoolantRaw = reactor.getHeatedCoolantFilledPercentage()
-        local wasteRaw = reactor.getWasteFilledPercentage()
-        local damageRaw = reactor.getDamagePercent()
+        local fuel = reactor.getFuelFilledPercentage()
+        local coolant = reactor.getCoolantFilledPercentage()
+        local heatedCoolant = reactor.getHeatedCoolantFilledPercentage()
+        local waste = reactor.getWasteFilledPercentage()
+        local damage = reactor.getDamagePercent()
+
+        if status and not autoScramTriggered then
+            if damage > 100 then
+                reactor.scram()
+                autoScramTriggered = true
+                actionMessage = "CRITICAL DAMAGE! AUTO-SCRAM."
+                parallel.waitForAny(playAlarm, blinkWarning, waitForAcknowledge)
+            elseif waste > 0.95 then
+                reactor.scram()
+                autoScramTriggered = true
+                actionMessage = "WASTE OVERFLOW! AUTO-SCRAM."
+                parallel.waitForAny(playAlarm, blinkWarning, waitForAcknowledge)
+            elseif coolant < 0.10 then
+                reactor.scram()
+                autoScramTriggered = true
+                actionMessage = "LOW COOLANT! AUTO-SCRAM."
+                parallel.waitForAny(playAlarm, blinkWarning, waitForAcknowledge)
+            elseif heatedCoolant > 0.95 then
+                reactor.scram()
+                autoScramTriggered = true
+                actionMessage = "HEATED COOLANT OVERFLOW! AUTO-SCRAM."
+                parallel.waitForAny(playAlarm, blinkWarning, waitForAcknowledge)
+            end
+        end
+
+        if fuel < 0.05 then
+            actionMessage = "WARNING: Fuel critically low!"
+        end
+
+        sleep(1)
+    end
+end
+
+-- Main menu interface
+local function showMenu()
+    term.clear()
+    while true do
+        local status = reactor.getStatus()
+        local fuel = toPercent(reactor.getFuelFilledPercentage())
+        local coolant = toPercent(reactor.getCoolantFilledPercentage())
+        local heatedCoolant = toPercent(reactor.getHeatedCoolantFilledPercentage())
+        local waste = toPercent(reactor.getWasteFilledPercentage())
+        local damage = string.format("%.1f%%", reactor.getDamagePercent())
         local temperature = string.format("%.2f K", reactor.getTemperature())
 
-        local fuel = toPercent(fuelRaw)
-        local coolant = toPercent(coolantRaw)
-        local heatedCoolant = toPercent(heatedCoolantRaw)
-        local waste = toPercent(wasteRaw)
-        local damage = string.format("%.1f%%", damageRaw)
-
-        -- Print status only once
+        -- Draw UI
+        term.setCursorPos(1, 1)
+        print("=== Reactor Control Panel ===")
         print("Status: " .. (status and "RUNNING" or "SHUT DOWN"))
         print("Fuel Level: " .. fuel)
         print("Coolant Level: " .. coolant)
@@ -82,77 +119,40 @@ local function showMenu()
         print("Damage: " .. damage)
         print("Temperature: " .. temperature)
         print("-----------------------------")
-        print("1. Activate Reactor")
-        print("2. Scram (Shutdown)")
-        print("3. Exit")
+
+        -- Menu options
+        if not status then
+            print("1. Activate Reactor")
+        else
+            print("1. SCRAM (Shutdown)")
+        end
+        print("2. Exit")
         print("-----------------------------")
         print(actionMessage)
+        term.setCursorPos(1, 15)
+        term.clearLine()
         io.write("> ")
 
-        -- User input handling (check for input every loop)
-        local input = read()  -- Corrected to read input properly
+        -- Read input
+        local input = read()
 
         if input == "1" then
-            reactor.activate()
-            actionMessage = "Reactor Activated."
-        elseif input == "2" then
-            reactor.scram()
-            actionMessage = "Reactor SCRAMMED."
-        elseif input == "3" then
-            break  -- Exit the loop
-        end
-
-        sleep(0.1)  -- Small delay before next loop iteration
-    end
-end
-
--- Main status loop
-local function statusLoop()
-    while true do
-        local status = reactor.getStatus()
-        local fuelRaw = reactor.getFuelFilledPercentage()
-        local coolantRaw = reactor.getCoolantFilledPercentage()
-        local heatedCoolantRaw = reactor.getHeatedCoolantFilledPercentage()
-        local wasteRaw = reactor.getWasteFilledPercentage()
-        local damageRaw = reactor.getDamagePercent()
-
-        -- Safety checks (only if running and not already triggered)
-        if status and not autoScramTriggered then
-            if damageRaw > 100 then
+            if not status then
+                if isReactorSafeToStart() then
+                    reactor.activate()
+                    actionMessage = "Reactor Activated."
+                else
+                    actionMessage = "Cannot start reactor! Unsafe conditions."
+                end
+            else
                 reactor.scram()
-                autoScramTriggered = true
-                playAlarm()  -- Start alarm
-                blinkWarning()  -- Start blinking warning
-                actionMessage = "CRITICAL DAMAGE (" .. damageRaw .. "%)! AUTO-SCRAM."
-            elseif wasteRaw > 0.95 then
-                reactor.scram()
-                autoScramTriggered = true
-                playAlarm()  -- Start alarm
-                blinkWarning()  -- Start blinking warning
-                actionMessage = "WASTE OVERFLOW (" .. wasteRaw .. ")! AUTO-SCRAM."
-            elseif coolantRaw < 0.10 then
-                reactor.scram()
-                autoScramTriggered = true
-                playAlarm()  -- Start alarm
-                blinkWarning()  -- Start blinking warning
-                actionMessage = "LOW COOLANT (" .. coolantRaw .. ")! AUTO-SCRAM."
-            elseif heatedCoolantRaw > 0.95 then
-                reactor.scram()
-                autoScramTriggered = true
-                playAlarm()  -- Start alarm
-                blinkWarning()  -- Start blinking warning
-                actionMessage = "HEATED COOLANT OVERFLOW (" .. heatedCoolantRaw .. ")! AUTO-SCRAM."
+                actionMessage = "Reactor SCRAMMED."
             end
+        elseif input == "2" then
+            break
         end
-
-        -- Fuel warning (but doesn't trigger SCRAM)
-        if fuelRaw < 0.05 then
-            actionMessage = "WARNING: Fuel critically low (" .. fuelRaw * 100 .. "%)!"
-        end
-
-        sleep(1)  -- Check status every second
     end
 end
 
--- Run both the status check and menu in parallel
+-- Run everything in parallel
 parallel.waitForAny(statusLoop, showMenu)
