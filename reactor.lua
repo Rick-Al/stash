@@ -85,7 +85,7 @@ local function showMenu()
         io.write("> ")
 
         -- User input handling (check for input every loop)
-        local input = read(nil, false)
+        local input = read()  -- Corrected to read input properly
 
         if input == "1" then
             reactor.activate()
