@@ -3,9 +3,20 @@ local reactor = peripheral.wrap("fissionReactorLogicAdapter_0")
 local speaker = peripheral.find("speaker")
 local autoScramTriggered = false
 local actionMessage = ""
-local menuSelection = 0
 
--- Helper functions
+-- Last known values
+local last = {
+    status = nil,
+    fuel = nil,
+    coolant = nil,
+    heated = nil,
+    waste = nil,
+    damage = nil,
+    temp = nil,
+    message = ""
+}
+
+-- Percent formatter
 local function toPercent(value)
     return string.format("%.1f%%", value * 100)
 end
@@ -17,12 +28,27 @@ local function isReactorSafeToStart()
        and reactor.getWasteFilledPercentage() <= 0.95
 end
 
--- Draw UI without clearing everything
-local function drawUI()
+-- Initial layout print
+local function drawStaticUI()
     term.setCursorPos(1, 1)
     term.clear()
     print("=== Reactor Control Panel ===")
+    for _ = 1, 7 do print("") end  -- reserve 7 lines for live values
+    print("-----------------------------")
+    print("1. Activate / SCRAM Reactor")
+    print("2. Exit")
+    print("-----------------------------")
+    print("") -- actionMessage
+end
 
+local function updateLine(line, label, value)
+    term.setCursorPos(1, line)
+    term.clearLine()
+    io.write(label .. value)
+end
+
+-- Redraw only if value changed
+local function refreshUI()
     local status = reactor.getStatus()
     local fuel = toPercent(reactor.getFuelFilledPercentage())
     local coolant = toPercent(reactor.getCoolantFilledPercentage())
@@ -31,41 +57,63 @@ local function drawUI()
     local damage = string.format("%.1f%%", reactor.getDamagePercent())
     local temp = string.format("%.2f K", reactor.getTemperature())
 
-    print("Status: " .. (status and "RUNNING" or "SHUT DOWN"))
-    print("Fuel Level: " .. fuel)
-    print("Coolant Level: " .. coolant)
-    print("Heated Coolant: " .. heated)
-    print("Waste Level: " .. waste)
-    print("Damage: " .. damage)
-    print("Temperature: " .. temp)
-    print("-----------------------------")
-    print("1. " .. (status and "SCRAM (Shutdown)" or "Activate Reactor"))
-    print("2. Exit")
-    print("-----------------------------")
-    print(actionMessage or "")
+    if status ~= last.status then
+        updateLine(2, "Status: ", status and "RUNNING" or "SHUT DOWN")
+        last.status = status
+    end
+    if fuel ~= last.fuel then
+        updateLine(3, "Fuel Level: ", fuel)
+        last.fuel = fuel
+    end
+    if coolant ~= last.coolant then
+        updateLine(4, "Coolant Level: ", coolant)
+        last.coolant = coolant
+    end
+    if heated ~= last.heated then
+        updateLine(5, "Heated Coolant: ", heated)
+        last.heated = heated
+    end
+    if waste ~= last.waste then
+        updateLine(6, "Waste Level: ", waste)
+        last.waste = waste
+    end
+    if damage ~= last.damage then
+        updateLine(7, "Damage: ", damage)
+        last.damage = damage
+    end
+    if temp ~= last.temp then
+        updateLine(8, "Temperature: ", temp)
+        last.temp = temp
+    end
+    if actionMessage ~= last.message then
+        term.setCursorPos(1, 13)
+        term.clearLine()
+        print(actionMessage)
+        last.message = actionMessage
+    end
 end
 
--- Alarm loop: two-tone alternating
+-- Alarm loop
 local function playAlarm()
     local toggle = true
     while autoScramTriggered do
         if speaker then
             if toggle then
-                speaker.playNote("harp", 3, 10) -- High tone
+                speaker.playNote("bit", 3, 10)
             else
-                speaker.playNote("bass", 1, 3) -- Low tone
+                speaker.playNote("bit", 1, 3)
             end
         end
         toggle = not toggle
-        sleep(2)
+        sleep(0.5)
     end
 end
 
--- Blinking warning display
+-- Warning blink
 local function blinkWarning()
     local blink = true
     while autoScramTriggered do
-        term.setCursorPos(1, 17)
+        term.setCursorPos(1, 14)
         term.clearLine()
         if blink then
             io.write("!!! EMERGENCY SCRAM ACTIVE !!!")
@@ -75,20 +123,20 @@ local function blinkWarning()
     end
 end
 
--- Wait for key press to acknowledge
+-- Acknowledge key
 local function waitForAcknowledge()
-    term.setCursorPos(1, 18)
+    term.setCursorPos(1, 15)
     term.clearLine()
     io.write("Press any key to acknowledge...")
     os.pullEvent("key")
     autoScramTriggered = false
-    term.setCursorPos(1, 17)
+    term.setCursorPos(1, 14)
     term.clearLine()
-    term.setCursorPos(1, 18)
+    term.setCursorPos(1, 15)
     term.clearLine()
 end
 
--- Monitor reactor for safety
+-- Safety logic
 local function statusLoop()
     while true do
         local status = reactor.getStatus()
@@ -126,17 +174,17 @@ local function statusLoop()
             actionMessage = "WARNING: Fuel critically low!"
         end
 
-        drawUI()
+        refreshUI()
         sleep(1)
     end
 end
 
--- Input handler (key-based)
+-- Input (no Enter)
 local function inputLoop()
     while true do
         local event, key = os.pullEvent("key")
+        local status = reactor.getStatus()
         if key == keys.one then
-            local status = reactor.getStatus()
             if status then
                 reactor.scram()
                 actionMessage = "Reactor SCRAMMED."
@@ -159,7 +207,8 @@ local function inputLoop()
     end
 end
 
--- Run both loops in parallel
+-- Start
 term.clear()
 term.setCursorPos(1, 1)
+drawStaticUI()
 parallel.waitForAny(statusLoop, inputLoop)
