@@ -221,7 +221,7 @@ local function inputLoop()
                 reactor.scram()
                 actionMessage = "Reactor SCRAMMED before exit."
             end
-            term.setCursorPos(1, 1)
+            term.setCursorPos(1, 19)
             print("Exiting...")
             sleep(1)
             os.shutdown()
