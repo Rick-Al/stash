@@ -33,7 +33,7 @@ end
 local function drawStaticUI()
     term.setCursorPos(1, 1)
     term.clear()
-    print("=== Remote Reactor Controller v1.1 ===")
+    print("[Remote Reactor Controller v1.1]")
     for _ = 1, 9 do print("") end  -- reserve 7 lines for live values
     print("-----------------------------")
     print("1. Activate Reactor")
