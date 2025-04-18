@@ -29,7 +29,7 @@ local function isReactorSafeToStart()
        and reactor.getWasteFilledPercentage() <= 0.95
 end
 
--- Initial layout print
+-- Initial layout print (Static UI)
 local function drawStaticUI()
     term.setCursorPos(1, 1)
     term.clear()
@@ -50,7 +50,7 @@ local function updateLine(line, label, value)
     io.write(label .. value)
 end
 
--- Redraw only if value changed
+-- Refresh only the dynamic sections (e.g., reactor stats, action message)
 local function refreshUI()
     local status = reactor.getStatus()
     local fuel = toPercent(reactor.getFuelFilledPercentage())
@@ -60,6 +60,7 @@ local function refreshUI()
     local damage = string.format("%.1f%%", reactor.getDamagePercent())
     local temp = string.format("%.2f K", reactor.getTemperature())
 
+    -- Update reactor status line
     if status ~= last.status then
         updateLine(2, "Status: ", status and "RUNNING" or "SHUT DOWN")
         if not status and autoScramTriggered then
@@ -67,6 +68,8 @@ local function refreshUI()
         end
         last.status = status
     end
+
+    -- Update reactor percentages
     if fuel ~= last.fuel then
         updateLine(4, "Fuel Level: ", fuel)
         last.fuel = fuel
@@ -91,6 +94,8 @@ local function refreshUI()
         updateLine(9, "Temperature: ", temp)
         last.temp = temp
     end
+
+    -- Update action message
     if actionMessage ~= last.message then
         term.setCursorPos(1, 12)
         term.clearLine()
@@ -105,13 +110,13 @@ local function playAlarm()
     while autoScramTriggered do
         if speaker then
             if toggle then
-                speaker.playNote("bit", 3, 10)
+                speaker.playNote("harp", 3, 10)
             else
-                speaker.playNote("bit", 1, 3)
+                speaker.playNote("bass", 1, 3)
             end
         end
         toggle = not toggle
-        sleep(0.5)
+        sleep(2)
     end
 end
 
