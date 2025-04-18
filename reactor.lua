@@ -83,8 +83,8 @@ local function showMenu()
         print(actionMessage)
         io.write("> ")
 
-        -- User input handling
-        local input = read()
+        -- User input handling (check for input every loop)
+        local input = read(nil, false)
 
         if input == "1" then
             reactor.activate()
@@ -96,7 +96,7 @@ local function showMenu()
             break  -- Exit the loop
         end
 
-        sleep(1)
+        sleep(0.1)  -- Small delay before next loop iteration
     end
 end
 
@@ -144,10 +144,9 @@ local function statusLoop()
             actionMessage = "⚠️ WARNING: Fuel critically low (" .. fuelRaw * 100 .. "%)!"
         end
 
-        sleep(1)
+        sleep(1)  -- Check status every second
     end
 end
 
 -- Run both the status check and menu in parallel
 parallel.waitForAny(statusLoop, showMenu)
-
