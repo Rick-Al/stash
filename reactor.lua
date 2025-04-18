@@ -1,5 +1,5 @@
 -- Peripheral setup
-local reactor = peripheral.wrap("fissionReactorLogicAdapter_0")
+local reactor = peripheral.find("fissionReactorLogicAdapter")
 local speaker = peripheral.find("speaker")
 local autoScramTriggered = false
 local autoScramReason = ""  -- Store the reason for auto-scram
