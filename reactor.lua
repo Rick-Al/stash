@@ -2,6 +2,7 @@
 local reactor = peripheral.wrap("fissionReactorLogicAdapter_0")
 local speaker = peripheral.find("speaker")
 local autoScramTriggered = false
+local autoScramReason = ""  -- Store the reason for auto-scram
 local actionMessage = ""
 
 -- Last known values
@@ -35,12 +36,14 @@ local function drawStaticUI()
     print("=== Reactor Control Panel ===")
     for _ = 1, 7 do print("") end  -- reserve 7 lines for live values
     print("-----------------------------")
-    print("1. Activate / SCRAM Reactor")
-    print("2. Exit")
+    print("1. Activate Reactor")
+    print("2. SCRAM Reactor")
+    print("3. Exit")
     print("-----------------------------")
     print("") -- actionMessage
 end
 
+-- Update status line and display scram reason if applicable
 local function updateLine(line, label, value)
     term.setCursorPos(1, line)
     term.clearLine()
@@ -59,34 +62,37 @@ local function refreshUI()
 
     if status ~= last.status then
         updateLine(2, "Status: ", status and "RUNNING" or "SHUT DOWN")
+        if not status and autoScramTriggered then
+            updateLine(3, "Auto Scram Reason: ", autoScramReason)
+        end
         last.status = status
     end
     if fuel ~= last.fuel then
-        updateLine(3, "Fuel Level: ", fuel)
+        updateLine(4, "Fuel Level: ", fuel)
         last.fuel = fuel
     end
     if coolant ~= last.coolant then
-        updateLine(4, "Coolant Level: ", coolant)
+        updateLine(5, "Coolant Level: ", coolant)
         last.coolant = coolant
     end
     if heated ~= last.heated then
-        updateLine(5, "Heated Coolant: ", heated)
+        updateLine(6, "Heated Coolant: ", heated)
         last.heated = heated
     end
     if waste ~= last.waste then
-        updateLine(6, "Waste Level: ", waste)
+        updateLine(7, "Waste Level: ", waste)
         last.waste = waste
     end
     if damage ~= last.damage then
-        updateLine(7, "Damage: ", damage)
+        updateLine(8, "Damage: ", damage)
         last.damage = damage
     end
     if temp ~= last.temp then
-        updateLine(8, "Temperature: ", temp)
+        updateLine(9, "Temperature: ", temp)
         last.temp = temp
     end
     if actionMessage ~= last.message then
-        term.setCursorPos(1, 13)
+        term.setCursorPos(1, 12)
         term.clearLine()
         print(actionMessage)
         last.message = actionMessage
@@ -113,7 +119,7 @@ end
 local function blinkWarning()
     local blink = true
     while autoScramTriggered do
-        term.setCursorPos(1, 14)
+        term.setCursorPos(1, 13)
         term.clearLine()
         if blink then
             io.write("!!! EMERGENCY SCRAM ACTIVE !!!")
@@ -125,14 +131,14 @@ end
 
 -- Acknowledge key
 local function waitForAcknowledge()
-    term.setCursorPos(1, 15)
+    term.setCursorPos(1, 14)
     term.clearLine()
     io.write("Press any key to acknowledge...")
     os.pullEvent("key")
     autoScramTriggered = false
-    term.setCursorPos(1, 14)
+    term.setCursorPos(1, 13)
     term.clearLine()
-    term.setCursorPos(1, 15)
+    term.setCursorPos(1, 14)
     term.clearLine()
 end
 
@@ -150,21 +156,25 @@ local function statusLoop()
             if damage > 100 then
                 reactor.scram()
                 autoScramTriggered = true
+                autoScramReason = "CRITICAL DAMAGE"
                 actionMessage = "CRITICAL DAMAGE! AUTO-SCRAM."
                 parallel.waitForAny(playAlarm, blinkWarning, waitForAcknowledge)
             elseif waste > 0.95 then
                 reactor.scram()
                 autoScramTriggered = true
+                autoScramReason = "WASTE OVERFLOW"
                 actionMessage = "WASTE OVERFLOW! AUTO-SCRAM."
                 parallel.waitForAny(playAlarm, blinkWarning, waitForAcknowledge)
             elseif coolant < 0.10 then
                 reactor.scram()
                 autoScramTriggered = true
+                autoScramReason = "LOW COOLANT"
                 actionMessage = "LOW COOLANT! AUTO-SCRAM."
                 parallel.waitForAny(playAlarm, blinkWarning, waitForAcknowledge)
             elseif heated > 0.95 then
                 reactor.scram()
                 autoScramTriggered = true
+                autoScramReason = "HEATED COOLANT OVERFLOW"
                 actionMessage = "HEATED COOLANT OVERFLOW! AUTO-SCRAM."
                 parallel.waitForAny(playAlarm, blinkWarning, waitForAcknowledge)
             end
@@ -186,8 +196,7 @@ local function inputLoop()
         local status = reactor.getStatus()
         if key == keys.one then
             if status then
-                reactor.scram()
-                actionMessage = "Reactor SCRAMMED."
+                actionMessage = "Error: Reactor already running!"
             else
                 if autoScramTriggered then
                     actionMessage = "Unsafe! Reset conditions first."
@@ -199,6 +208,19 @@ local function inputLoop()
                 end
             end
         elseif key == keys.two then
+            if not status then
+                actionMessage = "Error: Reactor is already off!"
+            else
+                reactor.scram()
+                autoScramReason = "MANUAL SCRAM"
+                actionMessage = "Reactor SCRAMMED."
+            end
+        elseif key == keys.three then
+            -- Scram the reactor if it's running before exiting
+            if status then
+                reactor.scram()
+                actionMessage = "Reactor SCRAMMED before exit."
+            end
             term.setCursorPos(1, 20)
             print("Exiting...")
             sleep(1)
