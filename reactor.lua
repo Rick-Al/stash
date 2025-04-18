@@ -1,6 +1,11 @@
 -- Wrap the reactor peripheral
 local reactor = peripheral.wrap("fissionReactorLogicAdapter_0")
 
+-- Helper to format percentage
+local function toPercent(value)
+    return string.format("%.1f%%", value * 100)
+end
+
 -- Function to display the menu
 local function showMenu()
     print("=== Reactor Control Panel ===")
@@ -11,14 +16,20 @@ local function showMenu()
     io.write("> ")
 end
 
--- Function to get status and display it
+-- Function to get and display detailed status
 local function getStatus()
     local status = reactor.getStatus()
-    if status then
-        print("Reactor is RUNNING.")
-    else
-        print("Reactor is SHUT DOWN.")
-    end
+    local fuel = toPercent(reactor.getFuelFilledPercentage())
+    local coolant = toPercent(reactor.getCoolantFilledPercentage())
+    local heatedCoolant = toPercent(reactor.getHeatedCoolantFilledPercentage())
+    local waste = toPercent(reactor.getWasteFilledPercentage())
+
+    print("=== Reactor Status ===")
+    print("Status: " .. (status and "RUNNING" or "SHUT DOWN"))
+    print("Fuel Level: " .. fuel)
+    print("Coolant Level: " .. coolant)
+    print("Heated Coolant Level: " .. heatedCoolant)
+    print("Waste Level: " .. waste)
 end
 
 -- Main program loop
