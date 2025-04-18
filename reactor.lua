@@ -34,7 +34,7 @@ local function drawStaticUI()
     term.setCursorPos(1, 1)
     term.clear()
     print("=== Reactor Control Panel ===")
-    for _ = 1, 7 do print("") end  -- reserve 7 lines for live values
+    for _ = 1, 9 do print("") end  -- reserve 7 lines for live values
     print("-----------------------------")
     print("1. Activate Reactor")
     print("2. SCRAM Reactor")
@@ -92,7 +92,7 @@ local function refreshUI()
         last.temp = temp
     end
     if actionMessage ~= last.message then
-        term.setCursorPos(1, 12)
+        term.setCursorPos(1, 17)
         term.clearLine()
         print(actionMessage)
         last.message = actionMessage
@@ -119,7 +119,7 @@ end
 local function blinkWarning()
     local blink = true
     while autoScramTriggered do
-        term.setCursorPos(1, 13)
+        term.setCursorPos(1, 18)
         term.clearLine()
         if blink then
             io.write("!!! EMERGENCY SCRAM ACTIVE !!!")
@@ -131,14 +131,14 @@ end
 
 -- Acknowledge key
 local function waitForAcknowledge()
-    term.setCursorPos(1, 14)
+    term.setCursorPos(1, 19)
     term.clearLine()
     io.write("Press any key to acknowledge...")
     os.pullEvent("key")
     autoScramTriggered = false
-    term.setCursorPos(1, 13)
+    term.setCursorPos(1, 18)
     term.clearLine()
-    term.setCursorPos(1, 14)
+    term.setCursorPos(1, 19)
     term.clearLine()
 end
 
@@ -221,7 +221,7 @@ local function inputLoop()
                 reactor.scram()
                 actionMessage = "Reactor SCRAMMED before exit."
             end
-            term.setCursorPos(1, 20)
+            term.setCursorPos(1, 1)
             print("Exiting...")
             sleep(1)
             os.shutdown()
