@@ -236,32 +236,48 @@ end
 -- Safety logic + uptime tracking with reactor formation and turbine checks
 local function statusLoop()
     while true do
-        local status = reactor.getStatus()
-        local damage = reactor.getDamagePercent()
-        local waste = reactor.getWasteFilledPercentage()
-        local coolant = reactor.getCoolantFilledPercentage()
-        local heated = reactor.getHeatedCoolantFilledPercentage()
-        local fuel = reactor.getFuelFilledPercentage()
-        local temp = reactor.getTemperature()
+        local status, damage, waste, coolant, heated, fuel, temp = nil, nil, nil, nil, nil, nil, nil
+        local turbineSteam, turbineEnergy = nil, nil
 
-        -- Turbine status checks
-        local turbineSteam = turbine.getSteamFilledPercentage()
-        local turbineEnergy = turbine.getEnergyFilledPercentage()
+        local reactorFormed = reactor.isFormed()
+        local turbineFormed = turbine and turbine.isFormed()
 
-        -- Uptime logic
-        if status then
-            if not reactorRunningSince then
-                reactorRunningSince = os.clock()
-            end
-            reactorUptime = math.floor(os.clock() - reactorRunningSince)
+        -- Reactor is not formed, trigger alarm
+        if not reactorFormed then
+            actionMessage = "REACTOR LOST"
+            parallel.waitForAny(playAlarm, blinkWarning, waitForAcknowledge)
         else
-            reactorRunningSince = nil
-            reactorUptime = 0  -- Reset uptime on SCRAM
+            status = reactor.getStatus()
+            damage = reactor.getDamagePercent()
+            waste = reactor.getWasteFilledPercentage()
+            coolant = reactor.getCoolantFilledPercentage()
+            heated = reactor.getHeatedCoolantFilledPercentage()
+            fuel = reactor.getFuelFilledPercentage()
+            temp = reactor.getTemperature()
+
+            -- Uptime tracking
+            if status then
+                if not reactorRunningSince then
+                    reactorRunningSince = os.clock()
+                end
+                reactorUptime = math.floor(os.clock() - reactorRunningSince)
+            else
+                reactorRunningSince = nil
+                reactorUptime = 0
+            end
         end
 
-        -- Safety checks with additional scram conditions
-        if status and not autoScramTriggered then
-            -- Reactor-related safety checks
+        -- Turbine is not formed, trigger alarm
+        if turbine and not turbineFormed then
+            actionMessage = "TURBINE LOST"
+            parallel.waitForAny(playAlarm, blinkWarning, waitForAcknowledge)
+        elseif turbineFormed then
+            turbineSteam = turbine.getSteamFilledPercentage()
+            turbineEnergy = turbine.getEnergyFilledPercentage()
+        end
+
+        -- Only perform safety checks if everything is formed and the reactor is on
+        if reactorFormed and status and not autoScramTriggered then
             if damage > 100 then
                 reactor.scram()
                 autoScramTriggered = true
@@ -286,7 +302,6 @@ local function statusLoop()
                 autoScramReason = "HEATED COOLANT OVERFLOW"
                 actionMessage = "HEATED COOLANT OVERFLOW! AUTO-SCRAM."
                 parallel.waitForAny(playAlarm, blinkWarning, waitForAcknowledge)
-            -- Additional scram triggers (existing)
             elseif temp > 1200 then
                 reactor.scram()
                 autoScramTriggered = true
@@ -299,35 +314,21 @@ local function statusLoop()
                 autoScramReason = "LOW FUEL"
                 actionMessage = "LOW FUEL! AUTO-SCRAM."
                 parallel.waitForAny(playAlarm, blinkWarning, waitForAcknowledge)
-            -- New turbine-related scram checks
-            elseif turbineSteam >= 0.95 then
+            elseif turbineFormed and turbineSteam and turbineSteam >= 0.95 then
                 reactor.scram()
                 autoScramTriggered = true
                 autoScramReason = "TURBINE STEAM FULL"
                 actionMessage = "TURBINE STEAM FULL! AUTO-SCRAM."
                 parallel.waitForAny(playAlarm, blinkWarning, waitForAcknowledge)
-            elseif turbineEnergy >= 0.95 then
+            elseif turbineFormed and turbineEnergy and turbineEnergy >= 0.95 then
                 reactor.scram()
                 autoScramTriggered = true
                 autoScramReason = "TURBINE ENERGY FULL"
                 actionMessage = "TURBINE ENERGY FULL! AUTO-SCRAM."
                 parallel.waitForAny(playAlarm, blinkWarning, waitForAcknowledge)
-            elseif not turbine.isFormed() then
-                reactor.scram()
-                autoScramTriggered = true
-                autoScramReason = "TURBINE LOST"
-                actionMessage = "TURBINE LOST! AUTO-SCRAM."
-                parallel.waitForAny(playAlarm, blinkWarning, waitForAcknowledge)
             end
         end
 
-        -- Check if reactor is formed (this won't trigger a scram, but will trigger an alarm)
-        if not reactor.isFormed() then
-            actionMessage = "REACTOR LOST"
-            parallel.waitForAny(playAlarm, blinkWarning, waitForAcknowledge)  -- Play alarm, blink warning, and wait for acknowledgment
-        end
-
-        -- Refresh UI
         refreshUI()
         sleep(1)
     end
