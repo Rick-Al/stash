@@ -188,7 +188,7 @@ local function waitForAcknowledge()
     term.clearLine()
 end
 
---turbine menu
+-- Turbine Stats
 local function showTurbineStats()
     while true do
         term.clear()
@@ -199,17 +199,21 @@ local function showTurbineStats()
         if not turbine then
             print("No turbine connected.")
         else
-            local flow = string.format("%.1f mB/t", turbine.getFlowRate())
-            local energy = string.format("%.1f FE", turbine.getEnergyProducedLastTick())
-            local steamIn = string.format("%.1f mB", turbine.getSteamInput())
-            local steamOut = string.format("%.1f mB", turbine.getSteamOutput())
-            local maxFlow = string.format("%.1f mB/t", turbine.getMaxFlowRate())
+            local flowRate = string.format("%.1f mB/t", turbine.getFlowRate())
+            local maxFlowRate = string.format("%.1f mB/t", turbine.getMaxFlowRate())
+            local productionRate = string.format("%.1f FE/t", turbine.getProducionRate()) -- Assuming correct method name
+            local steam = string.format("%.1f mB", turbine.getSteam())
+            local steamFilledPercentage = string.format("%.1f%%", turbine.getSteamFilledPercentage() * 100)
+            local energy = string.format("%.1f FE", turbine.getEnergy())
+            local energyFilledPercentage = string.format("%.1f%%", turbine.getEnergyFilledPercentage() * 100)
 
-            print("Flow Rate:       " .. flow)
-            print("Energy (last):   " .. energy)
-            print("Steam Input:     " .. steamIn)
-            print("Steam Output:    " .. steamOut)
-            print("Max Flow Rate:   " .. maxFlow)
+            print("Flow Rate:            " .. flowRate)
+            print("Max Flow Rate:        " .. maxFlowRate)
+            print("Production Rate:      " .. productionRate)
+            print("Steam:                " .. steam)
+            print("Steam Filled:         " .. steamFilledPercentage)
+            print("Energy:               " .. energy)
+            print("Energy Filled:        " .. energyFilledPercentage)
         end
 
         print("\nPress any key to return...")
@@ -229,8 +233,7 @@ local function showTurbineStats()
     end
 end
 
-
--- Safety logic + uptime tracking
+-- Safety logic + uptime tracking with reactor formation and turbine checks
 local function statusLoop()
     while true do
         local status = reactor.getStatus()
@@ -239,6 +242,11 @@ local function statusLoop()
         local coolant = reactor.getCoolantFilledPercentage()
         local heated = reactor.getHeatedCoolantFilledPercentage()
         local fuel = reactor.getFuelFilledPercentage()
+        local temp = reactor.getTemperature()
+
+        -- Turbine status checks
+        local turbineSteam = turbine.getSteamFilledPercentage()
+        local turbineEnergy = turbine.getEnergyFilledPercentage()
 
         -- Uptime logic
         if status then
@@ -251,8 +259,9 @@ local function statusLoop()
             reactorUptime = 0  -- Reset uptime on SCRAM
         end
 
-        -- Safety checks
+        -- Safety checks with additional scram conditions
         if status and not autoScramTriggered then
+            -- Reactor-related safety checks
             if damage > 100 then
                 reactor.scram()
                 autoScramTriggered = true
@@ -277,17 +286,53 @@ local function statusLoop()
                 autoScramReason = "HEATED COOLANT OVERFLOW"
                 actionMessage = "HEATED COOLANT OVERFLOW! AUTO-SCRAM."
                 parallel.waitForAny(playAlarm, blinkWarning, waitForAcknowledge)
+            -- Additional scram triggers (existing)
+            elseif temp > 1200 then
+                reactor.scram()
+                autoScramTriggered = true
+                autoScramReason = "OVERHEATED"
+                actionMessage = "OVERHEATED! AUTO-SCRAM."
+                parallel.waitForAny(playAlarm, blinkWarning, waitForAcknowledge)
+            elseif fuel < 0.05 then
+                reactor.scram()
+                autoScramTriggered = true
+                autoScramReason = "LOW FUEL"
+                actionMessage = "LOW FUEL! AUTO-SCRAM."
+                parallel.waitForAny(playAlarm, blinkWarning, waitForAcknowledge)
+            -- New turbine-related scram checks
+            elseif turbineSteam >= 0.95 then
+                reactor.scram()
+                autoScramTriggered = true
+                autoScramReason = "TURBINE STEAM FULL"
+                actionMessage = "TURBINE STEAM FULL! AUTO-SCRAM."
+                parallel.waitForAny(playAlarm, blinkWarning, waitForAcknowledge)
+            elseif turbineEnergy >= 0.95 then
+                reactor.scram()
+                autoScramTriggered = true
+                autoScramReason = "TURBINE ENERGY FULL"
+                actionMessage = "TURBINE ENERGY FULL! AUTO-SCRAM."
+                parallel.waitForAny(playAlarm, blinkWarning, waitForAcknowledge)
+            elseif not turbine.isFormed() then
+                reactor.scram()
+                autoScramTriggered = true
+                autoScramReason = "TURBINE LOST"
+                actionMessage = "TURBINE LOST! AUTO-SCRAM."
+                parallel.waitForAny(playAlarm, blinkWarning, waitForAcknowledge)
             end
         end
 
-        if fuel < 0.05 and not autoScramTriggered then
-            actionMessage = "WARNING: Fuel critically low!"
+        -- Check if reactor is formed (this won't trigger a scram, but will trigger an alarm)
+        if not reactor.isFormed() then
+            actionMessage = "REACTOR LOST"
+            parallel.waitForAny(playAlarm, blinkWarning, waitForAcknowledge)  -- Play alarm, blink warning, and wait for acknowledgment
         end
 
+        -- Refresh UI
         refreshUI()
         sleep(1)
     end
 end
+
 
 -- Input (no Enter)
 local function inputLoop()
