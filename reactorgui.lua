@@ -10,7 +10,7 @@ main:addLabel()
     :setPosition(2, 1)
     :setForeground(colors.yellow)
 
--- Simulate box background for data section
+-- Simulated box background for reactor stats
 local dataBox = main:addFrame()
     :setPosition(2, 3)
     :setSize(46, 9)
@@ -22,7 +22,7 @@ local statusLabel = dataBox:addLabel()
     :setPosition(2, 1)
     :setForeground(colors.white)
 
--- Individual stat lines
+-- Stat lines
 local fuelLabel     = dataBox:addLabel():setPosition(2, 3):setText("Fuel: Loading...")
 local coolantLabel  = dataBox:addLabel():setPosition(2, 4):setText("Coolant: Loading...")
 local heatedLabel   = dataBox:addLabel():setPosition(2, 5):setText("Heated Coolant: Loading...")
@@ -30,7 +30,7 @@ local wasteLabel    = dataBox:addLabel():setPosition(2, 6):setText("Waste: Loadi
 local tempLabel     = dataBox:addLabel():setPosition(2, 7):setText("Temperature: Loading...")
 local damageLabel   = dataBox:addLabel():setPosition(2, 8):setText("Damage: Loading...")
 
--- Control buttons at the bottom
+-- Control buttons
 local scramBtn = main:addButton()
     :setText("SCRAM")
     :setPosition(2, 13)
@@ -43,12 +43,12 @@ local activateBtn = main:addButton()
     :setSize(10, 3)
     :setBackground(colors.green)
 
--- Helper: percent formatting
-local function toPercent(num)
-    return string.format("%.1f%%", num * 100)
+-- Helper
+local function toPercent(val)
+    return string.format("%.1f%%", val * 100)
 end
 
--- Refresh UI with reactor info
+-- Update all UI text
 local function refresh()
     if not reactor then return end
 
@@ -60,9 +60,10 @@ local function refresh()
     local damage = string.format("%.1f%%", reactor.getDamagePercent())
     local temp = string.format("%.2f K", reactor.getTemperature())
 
-    -- Determine system status text
+    -- Determine readable status
     local statusText = "Nominal"
-    if not status then statusText = "SCRAMMED: Manual"
+    if not status then
+        statusText = "SCRAMMED: Manual"
     elseif reactor.getDamagePercent() > 0.5 then
         statusText = "Auto-SCRAMMED: Damage"
         reactor.scram()
@@ -88,8 +89,8 @@ activateBtn:onClick(function()
     refresh()
 end)
 
--- Periodic refresh
-main:addThread():start(function()
+-- Use Basalt's thread system correctly
+basalt.addThread(function()
     while true do
         refresh()
         os.sleep(1)
