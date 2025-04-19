@@ -101,6 +101,7 @@ end
 
 -- Alarm loop
 local function playAlarm()
+    redstone.setOutput("top", true)  --Turn redstone ON when alarm starts
     local toggle = true
     while autoScramTriggered do
         if speaker then
@@ -114,7 +115,6 @@ local function playAlarm()
         sleep(0.5)
     end
 end
-
 
 -- Warning blink
 local function blinkWarning()
@@ -137,11 +137,13 @@ local function waitForAcknowledge()
     io.write("Press any key to acknowledge...")
     os.pullEvent("key")
     autoScramTriggered = false
+    redstone.setOutput("top", false) 
     term.setCursorPos(1, 18)
     term.clearLine()
     term.setCursorPos(1, 19)
     term.clearLine()
 end
+
 
 -- Safety logic
 local function statusLoop()
@@ -184,14 +186,6 @@ local function statusLoop()
         if fuel < 0.05 and not autoScramTriggered then
             actionMessage = "WARNING: Fuel critically low!"
         end
-
-        -- Handle redstone output for alarm
-        if autoScramTriggered then
-            redstone.setOutput("top", true)
-        else
-            redstone.setOutput("top", false)
-        end
-
         refreshUI()
         sleep(1)
     end
