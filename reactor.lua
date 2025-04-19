@@ -28,6 +28,8 @@ if not turbine then
     sleep(2)
 end
 
+local isMainScreen = true  -- Set to true initially, indicating we're on the main screen
+
 -- Uptime tracking
 local reactorUptime = 0
 local reactorRunningSince = nil
@@ -43,6 +45,16 @@ local last = {
     temp = nil,
     uptime = "",
     message = ""
+}
+
+-- Last known turbine values
+local lastTurbine = {
+    flowRate = nil,
+    maxFlowRate = nil,
+    productionRate = nil,
+    steamFilled = nil,
+    energyFilled = nil,
+    energy = nil,
 }
 
 -- Format uptime as HH:MM:SS
@@ -88,6 +100,8 @@ end
 
 -- Redraw only if value changed
 local function refreshUI()
+    if not isMainScreen then return end  -- Prevent updates when on turbine screen
+
     local status = reactor.getStatus()
     local fuel = toPercent(reactor.getFuelFilledPercentage())
     local coolant = toPercent(reactor.getCoolantFilledPercentage())
@@ -141,6 +155,48 @@ local function refreshUI()
     end
 end
 
+-- Update turbine data
+local function updateTurbineLine(line, label, value)
+    term.setCursorPos(1, line)
+    term.clearLine()
+    print(label .. value)
+end
+
+-- Refresh turbine screen
+local function refreshTurbineStats()
+    local flowRate = string.format("%.1f mB/t", turbine.getFlowRate())
+    local maxFlowRate = string.format("%.1f mB/t", turbine.getMaxFlowRate())
+    local productionRate = string.format("%.1f FE/t", turbine.getProductionRate())
+    local steamFilled = string.format("%.1f%%", turbine.getSteamFilledPercentage() * 100)
+    local energyFilled = string.format("%.1f%%", turbine.getEnergyFilledPercentage() * 100)
+    local energy = string.format("%.0f FE", turbine.getEnergy())
+
+    -- Check if the value has changed, and update only if necessary
+    if flowRate ~= lastTurbine.flowRate then
+        updateTurbineLine(3, "Flow Rate: ", flowRate)
+        lastTurbine.flowRate = flowRate
+    end
+    if maxFlowRate ~= lastTurbine.maxFlowRate then
+        updateTurbineLine(4, "Max Flow Rate: ", maxFlowRate)
+        lastTurbine.maxFlowRate = maxFlowRate
+    end
+    if productionRate ~= lastTurbine.productionRate then
+        updateTurbineLine(5, "Production Rate: ", productionRate)
+        lastTurbine.productionRate = productionRate
+    end
+    if steamFilled ~= lastTurbine.steamFilled then
+        updateTurbineLine(6, "Steam Filled: ", steamFilled)
+        lastTurbine.steamFilled = steamFilled
+    end
+    if energyFilled ~= lastTurbine.energyFilled then
+        updateTurbineLine(7, "Energy Filled: ", energyFilled)
+        lastTurbine.energyFilled = energyFilled
+    end
+    if energy ~= lastTurbine.energy then
+        updateTurbineLine(8, "Energy: ", energy)
+        lastTurbine.energy = energy
+    end
+end
 
 -- Alarm loop
 local function playAlarm()
@@ -190,52 +246,34 @@ end
 
 -- Turbine Stats
 local function showTurbineStats()
+    -- Switch to turbine screen and disable the main screen updates
+    isMainScreen = false
+
     while true do
         term.clear()
         term.setCursorPos(1, 1)
         print("[Turbine Status Monitor]")
-        print("------------------------")
 
-        if not turbine then
-            print("No turbine connected.")
-        else
-            -- Safely get percentages (some return multiple values!)
-            local energyPercent = ({ turbine.getEnergyFilledPercentage() })[1] or 0
-            local steamPercent = ({ turbine.getSteamFilledPercentage() })[1] or 0
-
-            -- Format values
-            local flowRate = string.format("%.1f mB/t", turbine.getFlowRate())
-            local maxFlowRate = string.format("%.1f mB/t", turbine.getMaxFlowRate())
-            local productionRate = string.format("%.1f FE/t", turbine.getProductionRate())
-            local steamFilled = string.format("%.1f%%", steamPercent * 100)
-            local energyFilled = string.format("%.1f%%", energyPercent * 100)
-            local energy = string.format("%.0f FE", turbine.getEnergy())
-
-            -- Display stats
-            print("Flow Rate:            " .. flowRate)
-            print("Max Flow Rate:        " .. maxFlowRate)
-            print("Production Rate:      " .. productionRate)
-            print("Steam Filled:         " .. steamFilled)
-            print("Energy:               " .. energy)
-            print("Energy Filled:        " .. energyFilled)
-        end
+        -- Initially display turbine stats
+        refreshTurbineStats()
 
         print("Press any key to return...")
-
-        local timer = os.startTimer(1)
+        local timer = os.startTimer(1)  -- Refresh every 1 second
         while true do
             local event, param = os.pullEvent()
-            if event == "key" or autoScramTriggered then
-                drawStaticUI()
-                refreshUI()
+            if event == "key" then
+                -- Return to the main screen
+                isMainScreen = true
+                drawStaticUI()      -- Redraw main UI
+                refreshUI()         -- Refresh live values
                 return
             elseif event == "timer" and param == timer then
-                break -- refresh turbine screen
+                refreshTurbineStats() -- Refresh turbine stats every second
+                break
             end
         end
     end
 end
-
 
 -- Safety logic + uptime tracking with reactor formation and turbine checks
 local function statusLoop()
