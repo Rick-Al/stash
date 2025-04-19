@@ -99,22 +99,22 @@ local function refreshUI()
     end
 end
 
+-- Alarm loop
 local function playAlarm()
-    if speaker then
-        redstone.setOutput("top", true)  -- Turn on redstone steadily during alarm
-        local toggle = true
-        while autoScramTriggered do
+    local toggle = true
+    while autoScramTriggered do
+        if speaker then
             if toggle then
                 speaker.playNote("bit", 3, 10)
             else
                 speaker.playNote("bit", 1, 3)
             end
-            toggle = not toggle
-            sleep(0.5)
         end
-        redstone.setOutput("top", false)  -- Turn off redstone when alarm ends
+        toggle = not toggle
+        sleep(0.5)
     end
 end
+
 
 -- Warning blink
 local function blinkWarning()
@@ -185,10 +185,18 @@ local function statusLoop()
             actionMessage = "WARNING: Fuel critically low!"
         end
 
+        -- Handle redstone output for alarm
+        if autoScramTriggered then
+            redstone.setOutput("top", true)
+        else
+            redstone.setOutput("top", false)
+        end
+
         refreshUI()
         sleep(1)
     end
 end
+
 
 -- Input (no Enter)
 local function inputLoop()
