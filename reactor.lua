@@ -74,7 +74,7 @@ local function drawStaticUI()
     print("-----------------------------")
     print("1. Activate Reactor")
     print("2. SCRAM Reactor")
-    print("3. Exit")
+    print("3. Turbine Stats")
     print("-----------------------------")
     print("") -- actionMessage
 end
@@ -188,6 +188,47 @@ local function waitForAcknowledge()
     term.clearLine()
 end
 
+local function showTurbineStats()
+    while true do
+        term.clear()
+        term.setCursorPos(1, 1)
+        print("[Turbine Status Monitor]")
+        print("------------------------")
+
+        if not turbine then
+            print("No turbine connected.")
+        else
+            local flow = string.format("%.1f mB/t", turbine.getFlowRate())
+            local energy = string.format("%.1f FE", turbine.getEnergyProducedLastTick())
+            local steamIn = string.format("%.1f mB", turbine.getSteamInput())
+            local steamOut = string.format("%.1f mB", turbine.getSteamOutput())
+            local maxFlow = string.format("%.1f mB/t", turbine.getMaxFlowRate())
+
+            print("Flow Rate:       " .. flow)
+            print("Energy (last):   " .. energy)
+            print("Steam Input:     " .. steamIn)
+            print("Steam Output:    " .. steamOut)
+            print("Max Flow Rate:   " .. maxFlow)
+        end
+
+        print("\nPress any key to return...")
+
+        -- Wait up to 1 second for a key or check for alarm
+        local timer = os.startTimer(1)
+        while true do
+            local event, param = os.pullEvent()
+            if event == "key" or autoScramTriggered then
+                drawStaticUI()
+                refreshUI()
+                return
+            elseif event == "timer" and param == timer then
+                break -- refresh turbine screen
+            end
+        end
+    end
+end
+
+
 -- Safety logic + uptime tracking
 local function statusLoop()
     while true do
@@ -275,14 +316,12 @@ local function inputLoop()
                 actionMessage = "Reactor SCRAMMED."
             end
         elseif key == keys.three then
-            if status then
-                reactor.scram()
-                actionMessage = "Reactor SCRAMMED before exit."
-            end
-            term.setCursorPos(1, 19)
-            print("Exiting...")
-            sleep(1)
-            os.shutdown()
+            if not turbine then
+                actionMessage = "Turbine not connected."
+            else
+            showTurbineStats()  -- Jump to the turbine stats screen
+            drawStaticUI()        -- Redraw the main UI afterward
+            refreshUI()           -- Refresh values after returning
         end
     end
 end
