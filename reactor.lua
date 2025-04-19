@@ -1,9 +1,32 @@
 -- Peripheral setup
 local reactor = peripheral.find("fissionReactorLogicAdapter")
 local speaker = peripheral.find("speaker")
+local turbine = peripheral.find("turbineValve")
 local autoScramTriggered = false
 local autoScramReason = ""  -- Store the reason for auto-scram
 local actionMessage = ""
+
+if not reactor then
+    term.setCursorPos(1, 1)
+    term.clear()
+    print("Error: No fission reactor logic adapter found.")
+    sleep(3)
+    os.shutdown()
+end
+
+if not speaker then
+    term.setCursorPos(1, 1)
+    term.clear()
+    print("Warning: No speaker found. Alarms will be silent.")
+    sleep(2)
+end
+
+if not turbine then
+    term.setCursorPos(1, 1)
+    term.clear()
+    print("Info: No turbine found. Turbine stats will be unavailable.")
+    sleep(2)
+end
 
 -- Uptime tracking
 local reactorUptime = 0
