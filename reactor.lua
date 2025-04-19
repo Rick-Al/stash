@@ -100,8 +100,6 @@ end
 
 -- Redraw only if value changed
 local function refreshUI()
-    if not isMainScreen then return end  -- Prevent updates when on turbine screen
-
     local status = reactor.getStatus()
     local fuel = toPercent(reactor.getFuelFilledPercentage())
     local coolant = toPercent(reactor.getCoolantFilledPercentage())
@@ -112,6 +110,7 @@ local function refreshUI()
 
     local uptimeDisplay = formatTime(reactorUptime)
 
+    -- Only update lines if the data has changed
     if status ~= last.status then
         updateLine(3, "Status: ", status and "RUNNING" or "SHUT DOWN")
         if not status and autoScramTriggered then
@@ -155,6 +154,7 @@ local function refreshUI()
     end
 end
 
+
 -- Update turbine data
 local function updateTurbineLine(line, label, value)
     term.setCursorPos(1, line)
@@ -197,6 +197,7 @@ local function refreshTurbineStats()
         lastTurbine.energy = energy
     end
 end
+
 
 -- Alarm loop
 local function playAlarm()
@@ -246,9 +247,9 @@ end
 
 -- Turbine Stats
 local function showTurbineStats()
-    -- Switch to turbine screen and disable the main screen updates
+    -- Disable the main screen updates
     isMainScreen = false
-
+    
     while true do
         term.clear()
         term.setCursorPos(1, 1)
@@ -262,10 +263,10 @@ local function showTurbineStats()
         while true do
             local event, param = os.pullEvent()
             if event == "key" then
-                -- Return to the main screen
+                -- Switch back to the main screen
                 isMainScreen = true
                 drawStaticUI()      -- Redraw main UI
-                refreshUI()         -- Refresh live values
+                refreshUI()         -- Refresh the live values
                 return
             elseif event == "timer" and param == timer then
                 refreshTurbineStats() -- Refresh turbine stats every second
@@ -274,6 +275,7 @@ local function showTurbineStats()
         end
     end
 end
+
 
 -- Safety logic + uptime tracking with reactor formation and turbine checks
 local function statusLoop()
