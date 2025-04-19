@@ -158,6 +158,7 @@ local function waitForAcknowledge()
     io.write("Press any key to acknowledge...")
     os.pullEvent("key")
     autoScramTriggered = false
+    redstone.setOutput("top", false)
     term.setCursorPos(1, 18)
     term.clearLine()
     term.setCursorPos(1, 19)
