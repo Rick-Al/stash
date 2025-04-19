@@ -201,7 +201,7 @@ local function showTurbineStats()
         else
             local flowRate = string.format("%.1f mB/t", turbine.getFlowRate())
             local maxFlowRate = string.format("%.1f mB/t", turbine.getMaxFlowRate())
-            local productionRate = string.format("%.1f FE/t", turbine.getProducionRate()) -- Assuming correct method name
+            local productionRate = string.format("%.1f FE/t", turbine.getProductionRate()) -- Assuming correct method name
             local steam = string.format("%.1f mB", turbine.getSteam())
             local steamFilledPercentage = string.format("%.1f%%", turbine.getSteamFilledPercentage() * 100)
             local energy = string.format("%.1f FE", turbine.getEnergy())
