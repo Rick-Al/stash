@@ -156,11 +156,10 @@ local function refreshUI(force)
 end
 
 
--- Update turbine data
+-- Function to update individual turbine stats line
 local function updateTurbineLine(line, label, value)
     term.setCursorPos(1, line)
-    term.clearLine()
-    print(label .. value)
+    write(label .. value)
 end
 
 -- Function to refresh the turbine stats and update the display
@@ -244,7 +243,7 @@ end
 
 -- Function to show the turbine stats screen
 local function showTurbineStats()
-    -- Reserve lines
+    -- Reserve lines for the turbine stats screen
     for i = 2, 9 do
         term.setCursorPos(1, i)
         print("") -- Reserve lines
@@ -253,6 +252,9 @@ local function showTurbineStats()
     -- Print header for turbine stats
     term.setCursorPos(1, 2)
     print("Turbine Stats")
+
+    -- Immediately draw the initial turbine stats
+    refreshTurbineStats()
 
     -- Start the timer for refreshing turbine stats every 1 second
     local timerId = os.startTimer(1)
@@ -273,6 +275,8 @@ local function showTurbineStats()
         end
     end
 end
+
+
 -- Safety logic + uptime tracking with reactor formation and turbine checks
 local function statusLoop()
     while true do
