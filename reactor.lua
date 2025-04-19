@@ -5,6 +5,10 @@ local autoScramTriggered = false
 local autoScramReason = ""  -- Store the reason for auto-scram
 local actionMessage = ""
 
+-- Uptime tracking
+local reactorUptime = 0
+local reactorRunningSince = nil
+
 -- Last known values
 local last = {
     status = nil,
@@ -14,8 +18,17 @@ local last = {
     waste = nil,
     damage = nil,
     temp = nil,
+    uptime = "",
     message = ""
 }
+
+-- Format uptime as HH:MM:SS
+local function formatTime(seconds)
+    local hrs = math.floor(seconds / 3600)
+    local mins = math.floor((seconds % 3600) / 60)
+    local secs = seconds % 60
+    return string.format("%02d:%02d:%02d", hrs, mins, secs)
+end
 
 -- Percent formatter
 local function toPercent(value)
@@ -34,7 +47,7 @@ local function drawStaticUI()
     term.setCursorPos(1, 1)
     term.clear()
     print("[Remote Reactor Controller v1.1]")
-    for _ = 1, 9 do print("") end  -- reserve 7 lines for live values
+    for _ = 1, 10 do print("") end  -- reserve 10 lines for live values
     print("-----------------------------")
     print("1. Activate Reactor")
     print("2. SCRAM Reactor")
@@ -60,12 +73,18 @@ local function refreshUI()
     local damage = string.format("%.1f%%", reactor.getDamagePercent())
     local temp = string.format("%.2f K", reactor.getTemperature())
 
+    local uptimeDisplay = formatTime(reactorUptime)
+
     if status ~= last.status then
         updateLine(2, "Status: ", status and "RUNNING" or "SHUT DOWN")
         if not status and autoScramTriggered then
             updateLine(3, "Auto Scram Reason: ", autoScramReason)
         end
         last.status = status
+    end
+    if uptimeDisplay ~= last.uptime then
+        updateLine(3, "Uptime: ", uptimeDisplay)  -- Move uptime to line 3
+        last.uptime = uptimeDisplay
     end
     if fuel ~= last.fuel then
         updateLine(4, "Fuel Level: ", fuel)
@@ -99,10 +118,11 @@ local function refreshUI()
     end
 end
 
+
 -- Alarm loop
 local function playAlarm()
-    redstone.setOutput("top", true)  --Turn redstone ON when alarm starts
     local toggle = true
+    redstone.setOutput("top", true)
     while autoScramTriggered do
         if speaker then
             if toggle then
@@ -114,6 +134,7 @@ local function playAlarm()
         toggle = not toggle
         sleep(0.5)
     end
+    redstone.setOutput("top", false)
 end
 
 -- Warning blink
@@ -137,15 +158,13 @@ local function waitForAcknowledge()
     io.write("Press any key to acknowledge...")
     os.pullEvent("key")
     autoScramTriggered = false
-    redstone.setOutput("top", false) 
     term.setCursorPos(1, 18)
     term.clearLine()
     term.setCursorPos(1, 19)
     term.clearLine()
 end
 
-
--- Safety logic
+-- Safety logic + uptime tracking
 local function statusLoop()
     while true do
         local status = reactor.getStatus()
@@ -155,6 +174,18 @@ local function statusLoop()
         local heated = reactor.getHeatedCoolantFilledPercentage()
         local fuel = reactor.getFuelFilledPercentage()
 
+        -- Uptime logic
+        if status then
+            if not reactorRunningSince then
+                reactorRunningSince = os.clock()
+            end
+            reactorUptime = math.floor(os.clock() - reactorRunningSince)
+        else
+            reactorRunningSince = nil
+            reactorUptime = 0  -- Reset uptime on SCRAM
+        end
+
+        -- Safety checks
         if status and not autoScramTriggered then
             if damage > 100 then
                 reactor.scram()
@@ -186,11 +217,11 @@ local function statusLoop()
         if fuel < 0.05 and not autoScramTriggered then
             actionMessage = "WARNING: Fuel critically low!"
         end
+
         refreshUI()
         sleep(1)
     end
 end
-
 
 -- Input (no Enter)
 local function inputLoop()
@@ -205,6 +236,7 @@ local function inputLoop()
                     actionMessage = "Unsafe! Reset conditions first."
                 elseif isReactorSafeToStart() then
                     reactor.activate()
+                    reactorRunningSince = os.clock()
                     actionMessage = "Reactor Activated."
                 else
                     actionMessage = "Unsafe! Cannot activate."
@@ -219,7 +251,6 @@ local function inputLoop()
                 actionMessage = "Reactor SCRAMMED."
             end
         elseif key == keys.three then
-            -- Scram the reactor if it's running before exiting
             if status then
                 reactor.scram()
                 actionMessage = "Reactor SCRAMMED before exit."
