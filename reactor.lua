@@ -188,6 +188,7 @@ local function waitForAcknowledge()
     term.clearLine()
 end
 
+--turbine menu
 local function showTurbineStats()
     while true do
         term.clear()
@@ -319,10 +320,11 @@ local function inputLoop()
             if not turbine then
                 actionMessage = "Turbine not connected."
             else
-            showTurbineStats()  -- Jump to the turbine stats screen
-            drawStaticUI()        -- Redraw the main UI afterward
-            refreshUI()           -- Refresh values after returning
-        end
+                showTurbineStats()  -- Jump to the turbine stats screen
+                drawStaticUI()      -- Redraw the main UI afterward
+                refreshUI()         -- Refresh values after returning
+            end
+        end  -- This end is for the if statement checking the keys
     end
 end
 
