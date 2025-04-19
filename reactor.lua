@@ -199,26 +199,29 @@ local function showTurbineStats()
         if not turbine then
             print("No turbine connected.")
         else
+            -- Safely get percentages (some return multiple values!)
+            local energyPercent = ({ turbine.getEnergyFilledPercentage() })[1] or 0
+            local steamPercent = ({ turbine.getSteamFilledPercentage() })[1] or 0
+
+            -- Format values
             local flowRate = string.format("%.1f mB/t", turbine.getFlowRate())
             local maxFlowRate = string.format("%.1f mB/t", turbine.getMaxFlowRate())
-            local productionRate = string.format("%.1f FE/t", turbine.getProductionRate()) -- Assuming correct method name
-            local steam = string.format("%.1f mB", turbine.getSteam())
-            local steamFilledPercentage = string.format("%.1f%%", turbine.getSteamFilledPercentage() * 100)
-            local energy = string.format("%.1f FE", turbine.getEnergy())
-            local energyFilledPercentage = string.format("%.1f%%", turbine.getEnergyFilledPercentage() * 100)
+            local productionRate = string.format("%.1f FE/t", turbine.getProductionRate())
+            local steamFilled = string.format("%.1f%%", steamPercent * 100)
+            local energyFilled = string.format("%.1f%%", energyPercent * 100)
+            local energy = string.format("%.0f FE", turbine.getEnergy())
 
+            -- Display stats
             print("Flow Rate:            " .. flowRate)
             print("Max Flow Rate:        " .. maxFlowRate)
             print("Production Rate:      " .. productionRate)
-            print("Steam:                " .. steam)
-            print("Steam Filled:         " .. steamFilledPercentage)
+            print("Steam Filled:         " .. steamFilled)
             print("Energy:               " .. energy)
-            print("Energy Filled:        " .. energyFilledPercentage)
+            print("Energy Filled:        " .. energyFilled)
         end
 
-        print("\nPress any key to return...")
+        print("Press any key to return...")
 
-        -- Wait up to 1 second for a key or check for alarm
         local timer = os.startTimer(1)
         while true do
             local event, param = os.pullEvent()
@@ -232,6 +235,7 @@ local function showTurbineStats()
         end
     end
 end
+
 
 -- Safety logic + uptime tracking with reactor formation and turbine checks
 local function statusLoop()
