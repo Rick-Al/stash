@@ -100,7 +100,7 @@ end
 
 -- Redraw only if value changed
 local function refreshUI()
-    -- Don't run if not on the main screen
+    if not isMainScreen then return end -- Don't run if not on the main screen
 
     local status = reactor.getStatus()
     local fuel = toPercent(reactor.getFuelFilledPercentage())
