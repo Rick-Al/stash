@@ -99,7 +99,7 @@ local function updateLine(line, label, value)
 end
 
 -- Redraw only if value changed
-local function refreshUI()
+local function refreshUI(force)
     if not isMainScreen then return end -- Don't run if not on the main screen
 
     local status = reactor.getStatus()
@@ -112,49 +112,49 @@ local function refreshUI()
 
     local uptimeDisplay = formatTime(reactorUptime)
 
-    -- Only update lines if the data has changed
-    if status ~= last.status then
+    -- Redraw if forced or if values have changed
+    if force or status ~= last.status then
         updateLine(3, "Status: ", status and "RUNNING" or "SHUT DOWN")
-        if not status and autoScramTriggered then
-            updateLine(4, "Auto Scram Reason: ", autoScramReason)
-        end
         last.status = status
     end
-    if uptimeDisplay ~= last.uptime then
-        updateLine(4, "Uptime: ", uptimeDisplay)  -- Move uptime to line 3
+    if force or not status and autoScramTriggered then
+        updateLine(4, "Auto Scram Reason: ", autoScramReason)
+    elseif force or uptimeDisplay ~= last.uptime then
+        updateLine(4, "Uptime: ", uptimeDisplay)
         last.uptime = uptimeDisplay
     end
-    if fuel ~= last.fuel then
+    if force or fuel ~= last.fuel then
         updateLine(5, "Fuel Level: ", fuel)
         last.fuel = fuel
     end
-    if coolant ~= last.coolant then
+    if force or coolant ~= last.coolant then
         updateLine(6, "Coolant Level: ", coolant)
         last.coolant = coolant
     end
-    if heated ~= last.heated then
+    if force or heated ~= last.heated then
         updateLine(7, "Heated Coolant: ", heated)
         last.heated = heated
     end
-    if waste ~= last.waste then
+    if force or waste ~= last.waste then
         updateLine(8, "Waste Level: ", waste)
         last.waste = waste
     end
-    if damage ~= last.damage then
+    if force or damage ~= last.damage then
         updateLine(9, "Damage: ", damage)
         last.damage = damage
     end
-    if temp ~= last.temp then
+    if force or temp ~= last.temp then
         updateLine(10, "Temperature: ", temp)
         last.temp = temp
     end
-    if actionMessage ~= last.message then
+    if force or actionMessage ~= last.message then
         term.setCursorPos(1, 17)
         term.clearLine()
         print(actionMessage)
         last.message = actionMessage
     end
 end
+
 
 -- Update turbine data
 local function updateTurbineLine(line, label, value)
@@ -250,35 +250,35 @@ end
 
 -- Turbine Stats
 local function showTurbineStats()
-    -- Disable the main screen updates
     isMainScreen = false
-    
+
+    -- One-time layout setup
+    term.clear()
+    term.setCursorPos(1, 1)
+    print("[Turbine Status Monitor]")
+    for i = 2, 9 do
+        term.setCursorPos(1, i)
+        print("") -- Reserve lines for turbine values
+    end
+    term.setCursorPos(1, 10)
+    print("-----------------------------")
+    term.setCursorPos(1, 11)
+    print("Press any key to return...")
+
     while true do
-        term.clear()
-        term.setCursorPos(1, 1)
-        print("[Turbine Status Monitor]")
-
-        -- Initially display turbine stats
-        refreshTurbineStats()
-
-        print("Press any key to return...")
         local timer = os.startTimer(1)  -- Refresh every 1 second
-        while true do
-            local event, param = os.pullEvent()
-            if event == "key" then
-                -- Switch back to the main screen
-                isMainScreen = true
-                drawStaticUI()      -- Redraw main UI
-                refreshUI()         -- Refresh the live values
-                return
-            elseif event == "timer" and param == timer then
-                refreshTurbineStats() -- Refresh turbine stats every second
-                break
-            end
+        local event, param = os.pullEvent()
+
+        if event == "key" then
+            isMainScreen = true
+            drawStaticUI()
+            refreshUI(true)
+            return
+        elseif event == "timer" and param == timer then
+            refreshTurbineStats()
         end
     end
 end
-
 
 -- Safety logic + uptime tracking with reactor formation and turbine checks
 local function statusLoop()
@@ -376,7 +376,7 @@ local function statusLoop()
             end
         end
 
-        refreshUI()
+        refreshUI(false)
         sleep(1)
     end
 end
@@ -415,7 +415,7 @@ local function inputLoop()
             else
                 showTurbineStats()  -- Jump to the turbine stats screen
                 drawStaticUI()      -- Redraw the main UI afterward
-                refreshUI()         -- Refresh values after returning
+                refreshUI(false)         -- Refresh values after returning
             end
         end  -- This end is for the if statement checking the keys
     end
