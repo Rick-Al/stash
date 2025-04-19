@@ -76,38 +76,38 @@ local function refreshUI()
     local uptimeDisplay = formatTime(reactorUptime)
 
     if status ~= last.status then
-        updateLine(2, "Status: ", status and "RUNNING" or "SHUT DOWN")
+        updateLine(3, "Status: ", status and "RUNNING" or "SHUT DOWN")
         if not status and autoScramTriggered then
-            updateLine(3, "Auto Scram Reason: ", autoScramReason)
+            updateLine(4, "Auto Scram Reason: ", autoScramReason)
         end
         last.status = status
     end
     if uptimeDisplay ~= last.uptime then
-        updateLine(3, "Uptime: ", uptimeDisplay)  -- Move uptime to line 3
+        updateLine(4, "Uptime: ", uptimeDisplay)  -- Move uptime to line 3
         last.uptime = uptimeDisplay
     end
     if fuel ~= last.fuel then
-        updateLine(4, "Fuel Level: ", fuel)
+        updateLine(5, "Fuel Level: ", fuel)
         last.fuel = fuel
     end
     if coolant ~= last.coolant then
-        updateLine(5, "Coolant Level: ", coolant)
+        updateLine(6, "Coolant Level: ", coolant)
         last.coolant = coolant
     end
     if heated ~= last.heated then
-        updateLine(6, "Heated Coolant: ", heated)
+        updateLine(7, "Heated Coolant: ", heated)
         last.heated = heated
     end
     if waste ~= last.waste then
-        updateLine(7, "Waste Level: ", waste)
+        updateLine(8, "Waste Level: ", waste)
         last.waste = waste
     end
     if damage ~= last.damage then
-        updateLine(8, "Damage: ", damage)
+        updateLine(9, "Damage: ", damage)
         last.damage = damage
     end
     if temp ~= last.temp then
-        updateLine(9, "Temperature: ", temp)
+        updateLine(10, "Temperature: ", temp)
         last.temp = temp
     end
     if actionMessage ~= last.message then
