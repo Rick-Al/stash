@@ -6,8 +6,8 @@ local main = basalt.createFrame()
 -- Top title
 main:addLabel()
     :setText("Remote Reactor Controller")
-    :setFontSize(2)
     :setPosition(2, 1)
+    :setForeground(colors.yellow)
 
 -- Status Box
 local statusFrame = main:addFrame()
