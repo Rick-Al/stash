@@ -100,26 +100,20 @@ local function refreshUI()
 end
 
 local function playAlarm()
-    local toggle = true
-    while autoScramTriggered do
-        -- Toggle redstone output on the top
-        redstone.setOutput("top", toggle)
-
-        -- Play alternating tones
-        if speaker then
+    if speaker then
+        redstone.setOutput("top", true)  -- Turn on redstone steadily during alarm
+        local toggle = true
+        while autoScramTriggered do
             if toggle then
                 speaker.playNote("bit", 3, 10)
             else
                 speaker.playNote("bit", 1, 3)
             end
+            toggle = not toggle
+            sleep(0.5)
         end
-
-        toggle = not toggle
-        sleep(0.5)
+        redstone.setOutput("top", false)  -- Turn off redstone when alarm ends
     end
-
-    -- Turn off redstone signal when alarm ends
-    redstone.setOutput("top", false)
 end
 
 -- Warning blink
