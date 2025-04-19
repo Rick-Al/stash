@@ -100,6 +100,8 @@ end
 
 -- Redraw only if value changed
 local function refreshUI()
+    -- Don't run if not on the main screen
+
     local status = reactor.getStatus()
     local fuel = toPercent(reactor.getFuelFilledPercentage())
     local coolant = toPercent(reactor.getCoolantFilledPercentage())
@@ -154,7 +156,6 @@ local function refreshUI()
     end
 end
 
-
 -- Update turbine data
 local function updateTurbineLine(line, label, value)
     term.setCursorPos(1, line)
@@ -164,6 +165,8 @@ end
 
 -- Refresh turbine screen
 local function refreshTurbineStats()
+    if isMainScreen then return end
+    
     local flowRate = string.format("%.1f mB/t", turbine.getFlowRate())
     local maxFlowRate = string.format("%.1f mB/t", turbine.getMaxFlowRate())
     local productionRate = string.format("%.1f FE/t", turbine.getProductionRate())
