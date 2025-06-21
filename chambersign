@@ -1,16 +1,16 @@
 -- Configuration
-local imagePath = "test.nfp"
+local imagePath = "chambers/test.nfp"
 local inputSide = "top"
 local monitor = peripheral.find("monitor")
 
 -- Initial setup
-monitor.setTextScale(0.5)
+monitor.setTextScale(1)
 local showingImage = false
 local previousState = false
 
 -- Helper functions
 local function showImage()
-    term.redirect(monitor)
+    local originalTerm = term.redirect(monitor)
     term.clear()
     term.setCursorPos(1, 1)
     if fs.exists(imagePath) then
@@ -19,15 +19,15 @@ local function showImage()
     else
         print("Image not found!")
     end
-    term.restore()
+    term.redirect(originalTerm)
 end
 
 local function clearMonitor()
-    term.redirect(monitor)
+    local originalTerm = term.redirect(monitor)
     monitor.setBackgroundColor(colors.black)
     term.clear()
     term.setCursorPos(1, 1)
-    term.restore()
+    term.redirect(originalTerm)
 end
 
 local function flickerImage(times, delay)
