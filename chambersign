@@ -1,0 +1,50 @@
+-- Configuration
+local imagePath = "test.nfp"
+local inputSide = "top"
+local monitor = peripheral.find("monitor")
+
+-- Initial setup
+monitor.setTextScale(0.5)
+local showingImage = false
+local previousState = false
+
+-- Helper functions
+local function showImage()
+    term.redirect(monitor)
+    term.clear()
+    term.setCursorPos(1, 1)
+    if fs.exists(imagePath) then
+        local img = paintutils.loadImage(imagePath)
+        paintutils.drawImage(img, 1, 1)
+    else
+        print("Image not found!")
+    end
+    term.restore()
+end
+
+local function clearMonitor()
+    term.redirect(monitor)
+    term.setBackgroundColor(colors.black)
+    term.clear()
+    term.setCursorPos(1, 1)
+    term.restore()
+end
+
+-- Main loop
+while true do
+    local currentState = redstone.getInput(inputSide)
+
+    -- Detect rising edge (low -> high transition)
+    if currentState and not previousState then
+        showingImage = not showingImage
+
+        if showingImage then
+            showImage()
+        else
+            clearMonitor()
+        end
+    end
+
+    previousState = currentState
+    sleep(0.05)
+end
