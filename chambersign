@@ -24,21 +24,31 @@ end
 
 local function clearMonitor()
     term.redirect(monitor)
-    term.setBackgroundColor(colors.black)
+    monitor.setBackgroundColor(colors.black)
     term.clear()
     term.setCursorPos(1, 1)
     term.restore()
+end
+
+local function flickerImage(times, delay)
+    for i = 1, times do
+        showImage()
+        sleep(delay)
+        clearMonitor()
+        sleep(delay)
+    end
 end
 
 -- Main loop
 while true do
     local currentState = redstone.getInput(inputSide)
 
-    -- Detect rising edge (low -> high transition)
+    -- Rising edge detection (pulse)
     if currentState and not previousState then
         showingImage = not showingImage
 
         if showingImage then
+            flickerImage(2, 0.2) -- Flicker twice with 0.2s delay
             showImage()
         else
             clearMonitor()
