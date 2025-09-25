@@ -13,6 +13,16 @@ local messages = {
     "Which iPod are you?"
 }
 
+local function ensureFileExists(filename, url)
+    if not fs.exists(filename) then
+        print("Downloading missing file: " .. filename)
+        shell.run("wget " .. url .. " " .. filename)
+    end
+end
+
+ensureFileExists("apple.nfp", "https://pastebin.com/raw/xdVUHeuF")
+ensureFileExists("applew.nfp", "https://pastebin.com/raw/2VqqGDE9")
+
 local apple = paintutils.loadImage("apple.nfp")
 local applew = paintutils.loadImage("applew.nfp")
 
