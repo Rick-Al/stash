@@ -28,7 +28,7 @@ while true do
         function()
           while active do
             os.pullevent("redstone")
-            if redstone.getInput(inputSide)
+            if redstone.getInput(inputSide) then
               active = false
               print("Ghosts, busted.")
             end
