@@ -2,48 +2,49 @@ local speaker = peripheral.find("speaker")
 local relay = peripheral.find("redstone_relay")
 local inputSide = "top"
 
-local active = true
+local active = false
 
 print("Waiting for ghosts...")
 
 while true do
-  os.pullEvent("redstone")
+    os.pullEvent("redstone")
 
-  if redstone.getInput(inputSide) then
-    active = not active
+    if redstone.getInput(inputSide) then
+        active = not active
 
-    if active then
-      print("We got one!")
-      parallel.waitForAny(
-        function()
-          while active do
-            speaker.playNote("bell", 1, 1)
-            relay.setOutput("front", true)
-            sleep(0.1)
-            speaker.playNote("bell", 1, 12)
+        if active then
+            print("We got one!")
+
+            parallel.waitForAny(
+                function()
+
+                    while active do
+                        speaker.playNote("bell", 1, 1)
+                        relay.setOutput("front", true)
+                        sleep(0.1)
+                        speaker.playNote("bell", 1, 12)
+                        relay.setOutput("front", false)
+                        sleep(0.1)
+                    end
+                    relay.setOutput("front", false)
+                end,
+                function()
+                    while active do
+                        os.pullEvent("redstone")
+                        if redstone.getInput(inputSide) then
+                            active = false
+                            print("Ghosts, busted.")
+                            repeat os.pullEvent("redstone") until not redstone.getInput(inputSide)
+                        end
+                    end
+                end
+            )
+        else
+            print("Ghosts, busted.")
             relay.setOutput("front", false)
-            sleep(0.1)
-          end
-        end,
-        function()
-          while active do
-            os.pullevent("redstone")
-            if redstone.getInput(inputSide) then
-              active = false
-              print("Ghosts, busted.")
-            end
-          end
         end
-      )
-    else
-      print("Ghosts, busted.")
-      relay.setOutput("front", false)
-    end
 
-    while redstone.getInput(inputSide) do
-      os.pullEvent("redstone")
+        repeat os.pullEvent("redstone") until not redstone.getInput(inputSide)
     end
-  end
 end
 
-  
