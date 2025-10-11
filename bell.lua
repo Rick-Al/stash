@@ -9,7 +9,7 @@ print("Waiting for ghosts...")
 while true do
     os.pullEvent("redstone")
 
-    if redstone.getInput(inputSide) then
+    if relay.getInput(inputSide) then
         active = not active
 
         if active then
@@ -31,10 +31,10 @@ while true do
                 function()
                     while active do
                         os.pullEvent("redstone")
-                        if redstone.getInput(inputSide) then
+                        if relay.getInput(inputSide) then
                             active = false
                             print("Ghosts, busted.")
-                            repeat os.pullEvent("redstone") until not redstone.getInput(inputSide)
+                            repeat os.pullEvent("redstone") until not relay.getInput(inputSide)
                         end
                     end
                 end
@@ -44,7 +44,7 @@ while true do
             relay.setOutput("front", false)
         end
 
-        repeat os.pullEvent("redstone") until not redstone.getInput(inputSide)
+        repeat os.pullEvent("redstone") until not relay.getInput(inputSide)
     end
 end
 
