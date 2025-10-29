@@ -1,10 +1,11 @@
 -- pastebin 51u17dkr
 
 local mon = peripheral.find("monitor")
-local text = "Welcome to World Trade Center Station"
 local monWidth, monHeight = mon.getSize()
 local pos = monWidth
- 
+
+local text = "Welcome to World Trade Center Station"
+
 mon.clear()
 mon.setTextScale(3)
  
