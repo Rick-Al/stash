@@ -3,14 +3,14 @@ local relay = peripheral.find("redstone_relay")
 local crafter = peripheral.find("minecraft:crafter")
 local src = peripheral.find("minecraft:barrel")
 
-local crafterName = peripheral.getName(crafter)
-local srcName = peripheral.getName(src)
-
 local args = {...}
 
 if not (relay and crafter and src) then
     error("Missing peripherals! Ensure a relay, crafter, and barrel are connected.")
 end
+
+local crafterName = peripheral.getName(crafter)
+local srcName = peripheral.getName(src)
 
 if #args < 2 then
     print("Usage: craft <recipe> <count>")
