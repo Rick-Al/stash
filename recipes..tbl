@@ -1,0 +1,39 @@
+return {
+    torch = {
+        output = 4,
+        inputs = {
+            ["minecraft:stick"] = 1,
+            ["minecraft:coal"] = 1
+        },
+        layout = {
+            [2] = "minecraft:coal",
+            [5] = "minecraft:stick"
+        }
+    },
+
+    planks = {
+        output = 4,
+        inputs = {
+            ["minecraft:oak_log"] = 1
+        },
+        layout = {
+            [5] = "minecraft:oak_log"
+        }
+    },
+
+    bow = {
+        output = 1,
+        inputs = {
+            ["minecraft:stick"] = 3,
+            ["minecraft:string"] = 3
+        },
+        layout = {
+            [2] = "minecraft:stick",
+            [3] = "minecraft:string",
+            [4] = "minecraft:stick",
+            [6] = "minecraft:string",
+            [8] = "minecraft:stick",
+            [9] = "minecraft:string"
+        }
+    }
+}
