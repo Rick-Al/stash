@@ -42,6 +42,19 @@ local function countItems(inv, name)
     return total
 end
 
+local function hasAllIngredients(recipe, times)
+    local inv = src.list()
+    for _, ing in ipairs(recipe) do
+        local available = countItems(inv, ing.item)
+        local required = ing.count * times
+        if available < required then
+            print(("Not enough %s (need %d, have %d)"):format(ing.item, required, available))
+            return false
+        end
+    end
+    return true
+end
+
 local function moveItemToSlot(itemName, count, slot)
     for srcSlot, item in pairs(src.list()) do
         if item.name == itemName then
@@ -53,30 +66,30 @@ local function moveItemToSlot(itemName, count, slot)
     return false
 end
 
+-- Pre-check before crafting
+if not hasAllIngredients(recipe, times) then
+    print("Crafting aborted due to missing ingredients.")
+    return
+end
+
+-- Craft loop
 for i = 1, times do
     print("Crafting " .. recipeName .. " " .. i .. " of " .. times)
-
-    -- Verify ingredients
-    for _, ing in ipairs(recipe) do
-        local available = countItems(src.list(), ing.item)
-        if available < ing.count then
-            print("Not enough " .. ing.item .. " (" .. available .. " available)")
-            return
-        end
-    end
 
     -- Load crafter
     for _, ing in ipairs(recipe) do
         moveItemToSlot(ing.item, ing.count, ing.slot)
     end
 
-    -- Trigger craft
+    -- Pulse crafter
     relay.setOutput("front", true)
     sleep(0.1)
     relay.setOutput("front", false)
     sleep(0.5)
 
+    -- Wait for crafter reset
     sleep(0.2)
 end
 
 print("Done crafting " .. times .. " " .. recipeName .. "(s)")
+
