@@ -2,7 +2,15 @@
 local relay = peripheral.find("redstone_relay")
 local crafter = peripheral.find("minecraft:crafter")
 local src = peripheral.find("minecraft:barrel")
+
+local crafterName = peripheral.getName(crafter)
+local srcName = peripheral.getName(src)
+
 local args = {...}
+
+if not (relay and crafter and src) then
+    error("Missing peripherals! Ensure a relay, crafter, and barrel are connected.")
+end
 
 if #args < 2 then
     print("Usage: craft <recipe> <count>")
@@ -12,7 +20,7 @@ end
 local recipeName = args[1]
 local count = tonumber(args[2])
 
-if not count then
+if not count or count <= 0 then
     print("Please enter a valid number")
     return
 end
@@ -76,9 +84,14 @@ end
 local availableCrafts = getAvailableCrafts(recipe)
 local craftsNeeded = math.ceil(count / recipe.output)
 
-if availableCrafts < craftsNeeded then
-    print("Not enough materials! You can only craft " .. (availableCrafts * recipe.output) .. " " .. recipeName .. "(s).")
+if availableCrafts == 0 then
+    print("Not enough materials to craft any " .. recipeName .. "(s).")
     return
+elseif availableCrafts < craftsNeeded then
+    print(("Not enough materials to craft %d %s(s). Crafting %d instead."):
+        format(count, recipeName, availableCrafts * recipe.output))
+    craftsNeeded = availableCrafts
+    count = availableCrafts * recipe.output
 end
 
 print("Crafting " .. count .. " " .. recipeName .. "(s)...")
@@ -91,7 +104,7 @@ for i = 1, craftsNeeded do
             -- Find the item in the barrel
             for barrelSlot, stack in pairs(src.list()) do
                 if stack.name == item and stack.count > 0 then
-                    crafter.pullItems(peripheral.getName(src), barrelSlot, 1, slot)
+                    crafter.pullItems(srcName, barrelSlot, 1, slot)
                     break
                 end
             end
