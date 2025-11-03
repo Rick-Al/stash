@@ -22,7 +22,7 @@ local recipes = {
     planks = {
         output = 4,
         inputs = {["minecraft:oak_log"] = 1},
-        layout = { [1] = "minecraft:oak_log" }
+        layout = { [5] = "minecraft:oak_log" }
     },
     bow = {
         output = 1,
@@ -32,10 +32,11 @@ local recipes = {
         },
         layout = {
             [2] = "minecraft:string",
-            [5] = "minecraft:stick",
-            [6] = "minecraft:string",
-            [8] = "minecraft:stick",
-            [9] = "minecraft:string"
+            [3] = "minecraft:stick",
+            [4] = "minecraft:string",
+            [6] = "minecraft:stick",
+            [8] = "minecraft:string",
+            [9] = "minecraft:stick"
         }
     }
 }
