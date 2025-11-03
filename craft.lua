@@ -31,12 +31,12 @@ local recipes = {
             ["minecraft:string"] = 3
         },
         layout = {
-            [2] = "minecraft:string",
-            [3] = "minecraft:stick",
-            [4] = "minecraft:string",
-            [6] = "minecraft:stick",
-            [8] = "minecraft:string",
-            [9] = "minecraft:stick"
+            [2] = "minecraft:stick",
+            [3] = "minecraft:string",
+            [4] = "minecraft:stick",
+            [6] = "minecraft:string",
+            [8] = "minecraft:stick",
+            [9] = "minecraft:string"
         }
     }
 }
