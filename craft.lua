@@ -81,6 +81,11 @@ if availableCrafts < craftsNeeded then
     return
 end
 
+if availableCrafts < 1 then
+    print("Cannot craft any" .. recipeName .. "(s), not enough materials.")
+    return
+end
+
 print("Crafting " .. count .. " " .. recipeName .. "(s)...")
 
 for i = 1, craftsNeeded do
