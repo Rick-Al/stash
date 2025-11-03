@@ -2,94 +2,108 @@
 local relay = peripheral.find("redstone_relay")
 local crafter = peripheral.find("minecraft:crafter")
 local src = peripheral.find("minecraft:barrel")
-
-local recipes = {
-    bow = {
-        {slot = 1, item = "minecraft:string", count = 1},
-        {slot = 2, item = "minecraft:stick", count = 1},
-        {slot = 4, item = "minecraft:string", count = 1},
-        {slot = 6, item = "minecraft:stick", count = 1},
-        {slot = 7, item = "minecraft:string", count = 1},
-        {slot = 8, item = "minecraft:stick", count = 1},
-    },
-    planks = {
-        {slot = 5, item = "minecraft:oak_log", count = 1}
-    }
-}
-
 local args = {...}
-if #args < 1 then
-    print("Usage: craft <recipe> [amount]")
+
+if #args < 2 then
+    print("Usage: craft <recipe> <count>")
     return
 end
 
 local recipeName = args[1]
-local times = tonumber(args[2]) or 1
-local recipe = recipes[recipeName]
+local count = tonumber(args[2])
 
+if not count then
+    print("Please enter a valid number")
+    return
+end
+
+-- Define recipes with output quantity
+local recipes = {
+    planks = {
+        output = 4,
+        inputs = {["minecraft:oak_log"] = 1},
+        layout = { [1] = "minecraft:oak_log" }
+    },
+    bow = {
+        output = 1,
+        inputs = {
+            ["minecraft:stick"] = 3,
+            ["minecraft:string"] = 3
+        },
+        layout = {
+            [2] = "minecraft:string",
+            [5] = "minecraft:stick",
+            [6] = "minecraft:string",
+            [8] = "minecraft:stick",
+            [9] = "minecraft:string"
+        }
+    }
+}
+
+-- Check if recipe exists
+local recipe = recipes[recipeName]
 if not recipe then
     print("Unknown recipe: " .. recipeName)
+    print("Available recipes:")
+    for name, _ in pairs(recipes) do
+        print(" - " .. name)
+    end
     return
 end
 
-local function countItems(inv, name)
-    local total = 0
-    for _, item in pairs(inv) do
-        if item.name == name then
-            total = total + item.count
+-- Count how many crafts possible based on inventory
+local function getAvailableCrafts(recipe)
+    local items = src.list()
+    local maxCrafts = math.huge
+
+    for itemName, needed in pairs(recipe.inputs) do
+        local total = 0
+        for _, stack in pairs(items) do
+            if stack.name == itemName then
+                total = total + stack.count
+            end
+        end
+        local crafts = math.floor(total / needed)
+        if crafts < maxCrafts then
+            maxCrafts = crafts
         end
     end
-    return total
+
+    return maxCrafts
 end
 
-local function hasAllIngredients(recipe, times)
-    local inv = src.list()
-    for _, ing in ipairs(recipe) do
-        local available = countItems(inv, ing.item)
-        local required = ing.count * times
-        if available < required then
-            print(("Not enough %s (need %d, have %d)"):format(ing.item, required, available))
-            return false
-        end
-    end
-    return true
-end
+local availableCrafts = getAvailableCrafts(recipe)
+local craftsNeeded = math.ceil(count / recipe.output)
 
-local function moveItemToSlot(itemName, count, slot)
-    for srcSlot, item in pairs(src.list()) do
-        if item.name == itemName then
-            local moved = crafter.pullItems(peripheral.getName(src), srcSlot, count, slot)
-            count = count - moved
-            if count <= 0 then return true end
-        end
-    end
-    return false
-end
-
--- Pre-check before crafting
-if not hasAllIngredients(recipe, times) then
-    print("Crafting aborted due to missing ingredients.")
+if availableCrafts < craftsNeeded then
+    print("Not enough materials! You can only craft " .. (availableCrafts * recipe.output) .. " " .. recipeName .. "(s).")
     return
 end
 
--- Craft loop
-for i = 1, times do
-    print("Crafting " .. recipeName .. " " .. i .. " of " .. times)
+print("Crafting " .. count .. " " .. recipeName .. "(s)...")
 
-    -- Load crafter
-    for _, ing in ipairs(recipe) do
-        moveItemToSlot(ing.item, ing.count, ing.slot)
+for i = 1, craftsNeeded do
+    -- Pull items for this craft
+    for slot = 1, 9 do
+        local item = recipe.layout[slot]
+        if item then
+            -- Find the item in the barrel
+            for barrelSlot, stack in pairs(src.list()) do
+                if stack.name == item and stack.count > 0 then
+                    crafter.pullItems(peripheral.getName(src), barrelSlot, 1, slot)
+                    break
+                end
+            end
+        end
     end
 
-    -- Pulse crafter
+    -- Trigger craft
     relay.setOutput("front", true)
     sleep(0.1)
     relay.setOutput("front", false)
-    sleep(0.5)
 
-    -- Wait for crafter reset
     sleep(0.2)
 end
 
-print("Done crafting " .. times .. " " .. recipeName .. "(s)")
+print("Crafted " .. count .. " " .. recipeName .. "(s)!")
 
