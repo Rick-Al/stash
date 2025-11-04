@@ -91,10 +91,10 @@ local function getAvailableCrafts(recipe)
     return maxCrafts, missing, inventoryCount
 end
 
--- Recursive auto-crafting function
+-- Recursive auto-crafting function (fully scaled and recursive)
 local function autoCraftItem(itemName, neededCount, recipes, depth)
     depth = depth or 0
-    if depth > 5 then
+    if depth > 6 then
         print("Too many recursive crafting levels for " .. itemName)
         return false
     end
@@ -105,31 +105,45 @@ local function autoCraftItem(itemName, neededCount, recipes, depth)
         return false
     end
 
-    -- How many crafts are needed to produce enough of the missing item
     local craftsNeeded = math.ceil(neededCount / subRecipe.output)
-    print(("Auto-crafting %d of %s (%.0f crafts of %s)"):format(
+    print(("Auto-crafting %d of %s (%.0f crafts of recipe '%s')"):format(
         neededCount, itemName, craftsNeeded, itemName))
 
-    -- Recursively ensure we have sub-items for this subrecipe
-    local availableCrafts, missing, have = getAvailableCrafts(subRecipe)
-    if availableCrafts < craftsNeeded then
-        for subItem, info in pairs(subRecipe.inputs) do
-            local total = have[subItem] or 0
-            local required = info * craftsNeeded
-            if total < required then
-                local toMake = required - total
-                autoCraftItem(subItem, toMake, recipes, depth + 1)
+    -- Get inventory state
+    local items = src.list()
+    local inventoryCount = {}
+    for _, stack in pairs(items) do
+        inventoryCount[stack.name] = (inventoryCount[stack.name] or 0) + stack.count
+    end
+
+    -- Recursively ensure sub-items exist
+    for subItem, perCraftNeed in pairs(subRecipe.inputs) do
+        local totalNeed = perCraftNeed * craftsNeeded
+        local have = inventoryCount[subItem] or 0
+        if have < totalNeed then
+            local missing = totalNeed - have
+            print(("Need %d more %s for %s, attempting to craft..."):format(
+                missing, subItem, itemName))
+            if recipes[subItem] then
+                local ok = autoCraftItem(subItem, missing, recipes, depth + 1)
+                if not ok then
+                    print("Failed to craft required " .. subItem)
+                    return false
+                end
+            else
+                print(("Missing %d of %s and no recipe exists."):format(missing, subItem))
+                return false
             end
         end
     end
 
-    -- Actually craft it
+    -- Perform actual crafting
     for i = 1, craftsNeeded do
         for slot = 1, 9 do
-            local item = subRecipe.layout[slot]
-            if item then
+            local mat = subRecipe.layout[slot]
+            if mat then
                 for barrelSlot, stack in pairs(src.list()) do
-                    if stack.name == item and stack.count > 0 then
+                    if stack.name == mat and stack.count > 0 then
                         crafter.pullItems(srcName, barrelSlot, 1, slot)
                         break
                     end
@@ -143,24 +157,28 @@ local function autoCraftItem(itemName, neededCount, recipes, depth)
         sleep(0.2)
     end
 
-    print(("Crafted %d of %s"):format(subRecipe.output * craftsNeeded, itemName))
+    print(("Crafted %d %s"):format(subRecipe.output * craftsNeeded, itemName))
     return true
 end
 
+-- === Crafting logic ===
 local availableCrafts, missing, have = getAvailableCrafts(recipe)
 local craftsNeeded = math.ceil(count / recipe.output)
 
-if availableCrafts == 0 then
-    print("Not enough materials to craft any " .. recipeName .. "(s).")
-    print("\nMissing ingredients:")
-    for itemName, info in pairs(recipe.inputs) do
-        local total = have[itemName] or 0
-        local need = info
-        if total < need then
-            local missingCount = need - total
-            print((" - %s: need %d, have %d (missing %d)"):format(itemName, need, total, missingCount))
+-- Check for missing items
+local function ensureDependencies(recipe, craftsNeeded)
+    local items = src.list()
+    local inventoryCount = {}
+    for _, stack in pairs(items) do
+        inventoryCount[stack.name] = (inventoryCount[stack.name] or 0) + stack.count
+    end
 
-            -- Try to craft the missing items if recipe exists
+    for itemName, perCraftNeed in pairs(recipe.inputs) do
+        local totalNeeded = perCraftNeed * craftsNeeded
+        local have = inventoryCount[itemName] or 0
+        if have < totalNeeded then
+            local missingCount = totalNeeded - have
+            print(("Missing %d of %s for %s"):format(missingCount, itemName, recipeName))
             if recipes[itemName] then
                 autoCraftItem(itemName, missingCount, recipes)
             else
@@ -168,27 +186,25 @@ if availableCrafts == 0 then
             end
         end
     end
-
-    -- After attempting auto-crafting, recheck inventory
-    availableCrafts, missing, have = getAvailableCrafts(recipe)
-    if availableCrafts == 0 then
-        print("\nStill not enough materials for " .. recipeName .. ".")
-        return
-    else
-        print("\nDependencies crafted! Proceeding with " .. recipeName .. "...")
-    end
 end
 
-print("Crafting " .. count .. " " .. recipeName .. "(s)...")
+-- Try to ensure sub-items before main craft
+ensureDependencies(recipe, craftsNeeded)
 
+-- Recheck inventory after crafting dependencies
+availableCrafts, missing, have = getAvailableCrafts(recipe)
+if availableCrafts == 0 then
+    print("Still missing ingredients after dependency crafting. Aborting.")
+    return
+end
+
+print(("Crafting %d %s(s)..."):format(count, recipeName))
 for i = 1, craftsNeeded do
-    -- Pull items for this craft
     for slot = 1, 9 do
-        local item = recipe.layout[slot]
-        if item then
-            -- Find the item in the barrel
+        local mat = recipe.layout[slot]
+        if mat then
             for barrelSlot, stack in pairs(src.list()) do
-                if stack.name == item and stack.count > 0 then
+                if stack.name == mat and stack.count > 0 then
                     crafter.pullItems(srcName, barrelSlot, 1, slot)
                     break
                 end
@@ -196,12 +212,10 @@ for i = 1, craftsNeeded do
         end
     end
 
-    -- Trigger craft
     relay.setOutput("front", true)
     sleep(0.1)
     relay.setOutput("front", false)
-
     sleep(0.2)
 end
 
-print("Crafted " .. count .. " " .. recipeName .. "(s)!")
+print(("Crafted %d %s(s)!"):format(count, recipeName))
