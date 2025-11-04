@@ -27,11 +27,43 @@ if #args < 2 then
     return
 end
 
-local recipeName = args[1]
+local recipeNameArg = args[1]
 local count = tonumber(args[2])
+
 if not count or count <= 0 then
     print("Please enter a valid number")
     return
+end
+
+-- Normalize recipe input:
+local recipeName = recipeNameArg
+if not recipeName:find(":") then
+    recipeName = "minecraft:" .. recipeName
+end
+
+-- Check for exact match
+if not recipes[recipeName] then
+    -- Try to find a partial/fuzzy match from *any mod* if user didn’t specify full name
+    local matches = {}
+    for name, _ in pairs(recipes) do
+        if name:find(recipeNameArg) then
+            table.insert(matches, name)
+        end
+    end
+
+    if #matches == 1 then
+        print("Assuming you meant: " .. matches[1])
+        recipeName = matches[1]
+    elseif #matches > 1 then
+        print("Multiple possible matches found for '" .. recipeNameArg .. "':")
+        for _, name in ipairs(matches) do print(" - " .. name) end
+        return
+    else
+        print("Unknown recipe: " .. recipeNameArg)
+        print("Available recipes:")
+        for name, _ in pairs(recipes) do print(" - " .. name) end
+        return
+    end
 end
 
 -- Load recipes
