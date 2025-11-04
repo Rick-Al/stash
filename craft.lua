@@ -8,7 +8,7 @@ end
 
 local crafterName = peripheral.getName(crafter)
 
--- find all inventories on the network (chests, barrels, etc.)
+-- Find all connected inventories (chests, barrels, etc.)
 local inventories = {}
 for _, name in ipairs(peripheral.getNames()) do
     local methods = peripheral.getMethods(name)
@@ -19,8 +19,12 @@ end
 
 if #inventories == 0 then
     error("No storage inventories found on the network.")
+else
+    print("Connected inventories:")
+    for _, inv in ipairs(inventories) do print(" - " .. inv) end
 end
 
+-- Parse arguments
 local args = {...}
 if #args < 2 then
     print("Usage: craft <recipe> <count>")
@@ -33,37 +37,6 @@ local count = tonumber(args[2])
 if not count or count <= 0 then
     print("Please enter a valid number")
     return
-end
-
--- Normalize recipe input:
-local recipeName = recipeNameArg
-if not recipeName:find(":") then
-    recipeName = "minecraft:" .. recipeName
-end
-
--- Check for exact match
-if not recipes[recipeName] then
-    -- Try to find a partial/fuzzy match from *any mod* if user didn’t specify full name
-    local matches = {}
-    for name, _ in pairs(recipes) do
-        if name:find(recipeNameArg) then
-            table.insert(matches, name)
-        end
-    end
-
-    if #matches == 1 then
-        print("Assuming you meant: " .. matches[1])
-        recipeName = matches[1]
-    elseif #matches > 1 then
-        print("Multiple possible matches found for '" .. recipeNameArg .. "':")
-        for _, name in ipairs(matches) do print(" - " .. name) end
-        return
-    else
-        print("Unknown recipe: " .. recipeNameArg)
-        print("Available recipes:")
-        for name, _ in pairs(recipes) do print(" - " .. name) end
-        return
-    end
 end
 
 -- Load recipes
@@ -90,15 +63,42 @@ else
     error("Could not load or download recipes.tbl")
 end
 
-local recipe = recipes[recipeName]
-if not recipe then
-    print("Unknown recipe: " .. recipeName)
-    print("Available recipes:")
-    for name, _ in pairs(recipes) do print(" - " .. name) end
-    return
+-- Normalize recipe input and fuzzy match
+local recipeName = recipeNameArg
+if not recipeName:find(":") then
+    recipeName = "minecraft:" .. recipeName
 end
 
--- Helpers
+if not recipes[recipeName] then
+    local matches = {}
+    local lowerArg = recipeNameArg:lower()
+    for name, _ in pairs(recipes) do
+        if name:lower():find(lowerArg) then
+            table.insert(matches, name)
+        end
+    end
+
+    if #matches == 1 then
+        print("Assuming you meant: " .. matches[1])
+        recipeName = matches[1]
+    elseif #matches > 1 then
+        print("Multiple possible matches found for '" .. recipeNameArg .. "':")
+        for _, name in ipairs(matches) do print(" - " .. name) end
+        return
+    else
+        print("Unknown recipe: " .. recipeNameArg)
+        print("Available recipes:")
+        for name, _ in pairs(recipes) do print(" - " .. name) end
+        return
+    end
+end
+
+local recipe = recipes[recipeName]
+if not recipe then
+    error("Recipe missing or failed to load: " .. recipeName)
+end
+
+-- Helper functions
 local function getAllItems()
     local total = {}
     for _, inv in ipairs(inventories) do
@@ -137,6 +137,7 @@ local function getAvailableCrafts(recipe)
     return maxCrafts, missing, allItems
 end
 
+-- Recursive auto-crafter
 local function autoCraftItem(itemName, neededCount, depth)
     depth = depth or 0
     if depth > 6 then
@@ -154,7 +155,6 @@ local function autoCraftItem(itemName, neededCount, depth)
     print(("Auto-crafting %d of %s (%.0f crafts of recipe '%s')"):format(
         neededCount, itemName, craftsNeeded, itemName))
 
-    -- Make sure subcomponents exist
     local allItems = getAllItems()
     for subItem, perCraftNeed in pairs(subRecipe.inputs) do
         local totalNeed = perCraftNeed * craftsNeeded
@@ -173,7 +173,6 @@ local function autoCraftItem(itemName, neededCount, depth)
         end
     end
 
-    -- Perform crafting
     for i = 1, craftsNeeded do
         for slot = 1, 9 do
             local mat = subRecipe.layout[slot]
@@ -191,7 +190,7 @@ local function autoCraftItem(itemName, neededCount, depth)
     return true
 end
 
--- Main crafting logic
+-- === Main crafting logic ===
 local availableCrafts, missing, have = getAvailableCrafts(recipe)
 local craftsNeeded = math.ceil(count / recipe.output)
 
@@ -210,7 +209,7 @@ for itemName, perCraftNeed in pairs(recipe.inputs) do
     end
 end
 
--- Recheck after crafting subparts
+-- Recheck
 availableCrafts, missing = getAvailableCrafts(recipe)
 if availableCrafts == 0 then
     print("Still missing ingredients after dependency crafting. Aborting.")
