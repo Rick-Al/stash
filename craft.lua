@@ -32,7 +32,7 @@ local recipes = {}
 -- If the recipe file is missing, download it from GitHub
 if not fs.exists(recipeFile) then
     print("recipes.tbl not found. Downloading default recipe file...")
-    local url = "https://raw.githubusercontent.com/<your-username>/<your-repo>/main/recipes.tbl"
+    local url = "https://raw.githubusercontent.com/Rick-Al/stash/refs/heads/main/recipes.tbl"
     shell.run("wget", url, recipeFile)
 end
 
