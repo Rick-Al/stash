@@ -91,9 +91,6 @@ local function getAvailableCrafts(recipe)
     return maxCrafts, missing, inventoryCount
 end
 
-local availableCrafts = getAvailableCrafts(recipe)
-local craftsNeeded = math.ceil(count / recipe.output)
-
 local availableCrafts, missing, have = getAvailableCrafts(recipe)
 local craftsNeeded = math.ceil(count / recipe.output)
 
