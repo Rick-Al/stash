@@ -91,40 +91,92 @@ local function getAvailableCrafts(recipe)
     return maxCrafts, missing, inventoryCount
 end
 
+-- Recursive auto-crafting function
+local function autoCraftItem(itemName, neededCount, recipes, depth)
+    depth = depth or 0
+    if depth > 5 then
+        print("Too many recursive crafting levels for " .. itemName)
+        return false
+    end
+
+    local subRecipe = recipes[itemName]
+    if not subRecipe then
+        print("No recipe found for missing item: " .. itemName)
+        return false
+    end
+
+    -- How many crafts are needed to produce enough of the missing item
+    local craftsNeeded = math.ceil(neededCount / subRecipe.output)
+    print(("Auto-crafting %d of %s (%.0f crafts of %s)"):format(
+        neededCount, itemName, craftsNeeded, itemName))
+
+    -- Recursively ensure we have sub-items for this subrecipe
+    local availableCrafts, missing, have = getAvailableCrafts(subRecipe)
+    if availableCrafts < craftsNeeded then
+        for subItem, info in pairs(subRecipe.inputs) do
+            local total = have[subItem] or 0
+            local required = info * craftsNeeded
+            if total < required then
+                local toMake = required - total
+                autoCraftItem(subItem, toMake, recipes, depth + 1)
+            end
+        end
+    end
+
+    -- Actually craft it
+    for i = 1, craftsNeeded do
+        for slot = 1, 9 do
+            local item = subRecipe.layout[slot]
+            if item then
+                for barrelSlot, stack in pairs(src.list()) do
+                    if stack.name == item and stack.count > 0 then
+                        crafter.pullItems(srcName, barrelSlot, 1, slot)
+                        break
+                    end
+                end
+            end
+        end
+
+        relay.setOutput("front", true)
+        sleep(0.1)
+        relay.setOutput("front", false)
+        sleep(0.2)
+    end
+
+    print(("Crafted %d of %s"):format(subRecipe.output * craftsNeeded, itemName))
+    return true
+end
+
 local availableCrafts, missing, have = getAvailableCrafts(recipe)
 local craftsNeeded = math.ceil(count / recipe.output)
 
 if availableCrafts == 0 then
     print("Not enough materials to craft any " .. recipeName .. "(s).")
-    print("\nInventory check:")
+    print("\nMissing ingredients:")
     for itemName, info in pairs(recipe.inputs) do
         local total = have[itemName] or 0
         local need = info
         if total < need then
-            print(("%s: need %d, have %d (missing %d)"):format(itemName, need, total, need - total))
-        else
-            print(("%s: need %d, have %d"):format(itemName, need, total))
-        end
-    end
-    return
-elseif availableCrafts < craftsNeeded then
-    print(("Not enough materials to craft %d %s(s). Crafting %d instead."):
-        format(count, recipeName, availableCrafts * recipe.output))
+            local missingCount = need - total
+            print((" - %s: need %d, have %d (missing %d)"):format(itemName, need, total, missingCount))
 
-    -- Show partial stock summary
-    print("\nInventory check:")
-    for itemName, info in pairs(recipe.inputs) do
-        local total = have[itemName] or 0
-        local need = info * craftsNeeded
-        if total < need then
-            print(("%s: need %d, have %d (missing %d)"):format(itemName, need, total, need - total))
-        else
-            print(("%s: need %d, have %d"):format(itemName, need, total))
+            -- Try to craft the missing items if recipe exists
+            if recipes[itemName] then
+                autoCraftItem(itemName, missingCount, recipes)
+            else
+                print("   ❌ No recipe found for " .. itemName)
+            end
         end
     end
 
-    craftsNeeded = availableCrafts
-    count = availableCrafts * recipe.output
+    -- After attempting auto-crafting, recheck inventory
+    availableCrafts, missing, have = getAvailableCrafts(recipe)
+    if availableCrafts == 0 then
+        print("\nStill not enough materials for " .. recipeName .. ".")
+        return
+    else
+        print("\nDependencies crafted! Proceeding with " .. recipeName .. "...")
+    end
 end
 
 print("Crafting " .. count .. " " .. recipeName .. "(s)...")
