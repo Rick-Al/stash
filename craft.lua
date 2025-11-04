@@ -110,7 +110,7 @@ local function pullItemFromNetwork(itemName, count, destSlot)
     for _, inv in ipairs(inventories) do
         for slot, stack in pairs(peripheral.call(inv, "list")) do
             if stack.name == itemName and count > 0 then
-                local moved = crafter.pullItems(inv, slot, count, destSlot)
+                local moved = peripheral.call(inv, "pushItems", crafterName, slot, count, destSlot)
                 count = count - moved
                 if count <= 0 then return true end
             end
