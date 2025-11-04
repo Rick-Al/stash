@@ -164,7 +164,7 @@ if availableCrafts == 0 then
             if recipes[itemName] then
                 autoCraftItem(itemName, missingCount, recipes)
             else
-                print("   ❌ No recipe found for " .. itemName)
+                print("No recipe found for " .. itemName)
             end
         end
     end
