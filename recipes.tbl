@@ -1,5 +1,5 @@
 {
-  planks = {
+  minecraft:planks = {
     output = 4,
     inputs = {
       ["minecraft:oak_log"] = 1
@@ -9,7 +9,7 @@
     }
 },
 
-torch = {
+minecraft:torch = {
     output = 4,
     inputs = {
         ["minecraft:stick"] = 1,
@@ -21,7 +21,7 @@ torch = {
     }
 },
 
-  bow = {
+  minecraft:bow = {
     output = 1,
     inputs = {
       ["minecraft:stick"] = 3,
