@@ -19,9 +19,6 @@ end
 
 if #inventories == 0 then
     error("No storage inventories found on the network.")
-else
-    print("Connected inventories:")
-    for _, inv in ipairs(inventories) do print(" - " .. inv) end
 end
 
 -- Parse arguments
