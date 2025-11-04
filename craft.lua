@@ -67,32 +67,65 @@ end
 local function getAvailableCrafts(recipe)
     local items = src.list()
     local maxCrafts = math.huge
+    local inventoryCount = {}
+
+    -- Build a quick lookup table of items in the barrel
+    for _, stack in pairs(items) do
+        inventoryCount[stack.name] = (inventoryCount[stack.name] or 0) + stack.count
+    end
+
+    local missing = {}
 
     for itemName, needed in pairs(recipe.inputs) do
-        local total = 0
-        for _, stack in pairs(items) do
-            if stack.name == itemName then
-                total = total + stack.count
-            end
-        end
+        local total = inventoryCount[itemName] or 0
         local crafts = math.floor(total / needed)
         if crafts < maxCrafts then
             maxCrafts = crafts
         end
+
+        if total < needed then
+            missing[itemName] = { have = total, need = needed }
+        end
     end
 
-    return maxCrafts
+    return maxCrafts, missing, inventoryCount
 end
 
 local availableCrafts = getAvailableCrafts(recipe)
 local craftsNeeded = math.ceil(count / recipe.output)
 
+local availableCrafts, missing, have = getAvailableCrafts(recipe)
+local craftsNeeded = math.ceil(count / recipe.output)
+
 if availableCrafts == 0 then
     print("Not enough materials to craft any " .. recipeName .. "(s).")
+    print("\nInventory check:")
+    for itemName, info in pairs(recipe.inputs) do
+        local total = have[itemName] or 0
+        local need = info
+        if total < need then
+            print(("%s: need %d, have %d (missing %d)"):format(itemName, need, total, need - total))
+        else
+            print(("%s: need %d, have %d"):format(itemName, need, total))
+        end
+    end
     return
 elseif availableCrafts < craftsNeeded then
     print(("Not enough materials to craft %d %s(s). Crafting %d instead."):
         format(count, recipeName, availableCrafts * recipe.output))
+
+    -- Show partial stock summary
+    print("\nInventory check:")
+    for itemName, info in pairs(recipe.inputs) do
+        local total = have[itemName] or 0
+        local need = info * craftsNeeded
+        if total < need then
+            print(("%s: need %d, have %d (missing %d)"):format(itemName, need, total, need - total))
+        else
+            print(("%s: need %d, have %d"):format(itemName, need, total))
+        end
+    end
+
     craftsNeeded = availableCrafts
     count = availableCrafts * recipe.output
 end
