@@ -1,4 +1,4 @@
--- a simple crafting program
+-- simple crafting program
 local relay = peripheral.find("redstone_relay")
 local crafter = peripheral.find("minecraft:crafter")
 local src = peripheral.find("minecraft:barrel")
@@ -25,29 +25,32 @@ if not count or count <= 0 then
     return
 end
 
--- Define recipes with output quantity
-local recipes = {
-    planks = {
-        output = 4,
-        inputs = {["minecraft:oak_log"] = 1},
-        layout = { [5] = "minecraft:oak_log" }
-    },
-    bow = {
-        output = 1,
-        inputs = {
-            ["minecraft:stick"] = 3,
-            ["minecraft:string"] = 3
-        },
-        layout = {
-            [2] = "minecraft:stick",
-            [3] = "minecraft:string",
-            [4] = "minecraft:stick",
-            [6] = "minecraft:string",
-            [8] = "minecraft:stick",
-            [9] = "minecraft:string"
-        }
-    }
-}
+-- Load recipes from recipes.tbl file
+local recipeFile = "recipes.tbl"
+local recipes = {}
+
+-- If the recipe file is missing, download it from GitHub
+if not fs.exists(recipeFile) then
+    print("recipes.tbl not found. Downloading default recipe file...")
+    local url = "https://raw.githubusercontent.com/<your-username>/<your-repo>/main/recipes.tbl"
+    shell.run("wget", url, recipeFile)
+end
+
+-- Load file
+if fs.exists(recipeFile) then
+    local f = fs.open(recipeFile, "r")
+    local data = f.readAll()
+    f.close()
+
+    local ok, tbl = pcall(textutils.unserialize, data)
+    if ok and type(tbl) == "table" then
+        recipes = tbl
+    else
+        error("Failed to load recipes.tbl")
+    end
+else
+    error("Could not load or download recipes.tbl")
+end
 
 -- Check if recipe exists
 local recipe = recipes[recipeName]
@@ -120,4 +123,3 @@ for i = 1, craftsNeeded do
 end
 
 print("Crafted " .. count .. " " .. recipeName .. "(s)!")
-
