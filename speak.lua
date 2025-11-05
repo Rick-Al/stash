@@ -1,4 +1,5 @@
 -- program for using supplementaries speaker block in narrator mode
+-- pastebin M5QsE2PS
 local spkr = peripheral.find("speaker_block")
 local args = {...}
 
