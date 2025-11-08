@@ -18,6 +18,7 @@ local announcements = {
 }
 
 local function playChime()
+    sleep(0.1)
     chimeSpeaker.playNote("chime", 1, 5)
     sleep(0.5)
     chimeSpeaker.playNote("chime", 1, 1)
