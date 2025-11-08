@@ -31,10 +31,11 @@ local function announce(message)
     ttsSpeaker.activate()
 end
 
-local function announcetime()
+local function announceTime()
     local time = textutils.formatTime(os.time(), false)
-    announce("The time is " .. time .. ".")
+    announce("The current is now " .. time .. ".")
 end
+
 
 -- Main loop
 print("Announcement system started.")
