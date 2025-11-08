@@ -19,7 +19,7 @@ end
 
 local word = args[1]
 
-spkr.setName(word)
+spkr.setName(" ")
 spkr.setNarrator("narrator")
-spkr.setMessage("")
+spkr.setMessage(word)
 spkr.activate()
