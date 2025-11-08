@@ -10,12 +10,11 @@ if not ttsSpeaker then
 end
 
 local announcements = {
-    "Please remember to sign out your devices before leaving.",
-    "Lunch break begins in 10 minutes.",
-    "Safety is everyone's responsibility. Keep your area clean.",
-    "Meeting in the main conference room at 3 PM.",
-    "Don’t forget to hydrate!",
-    "All systems operating normally."
+    "The Green and Blue lines are closed for construction. Sun stone transit authority apologizes for any inconvience. Thank you for your understanding.",
+    "The Sun stone transity authority would like to remind riders that fare evasion is a crime. see something, say something.",
+    "Information on routes and stations is available from the information kiosk.",
+    "Please help keep our metro clean, pick up your trash.",
+    "Thank you for choosing the metro."
 }
 
 local function playChime()
@@ -32,11 +31,17 @@ local function announce(message)
     ttsSpeaker.activate()
 end
 
+local function announcetime()
+    local time = textutils.formatTime(os.time(), false)
+    announce("The time is " .. time .. ".")
+end
+
 -- Main loop
 print("Announcement system started.")
 while true do
     local message = announcements[math.random(1, #announcements)]
     playChime()
+    announceTime()
     sleep(0.5)
     announce(message)
     sleep(60)
