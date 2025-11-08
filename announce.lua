@@ -11,7 +11,7 @@ end
 
 local announcements = {
     "The Green and Blue lines are closed for construction. Sun stone transit authority apologizes for any inconvience. Thank you for your understanding.",
-    "The Sun stone transity authority would like to remind riders that fare evasion is a crime. see something, say something.",
+    "The Sun stone transity authorit would like to remind riders that fare evasion is a crime. see something, say something.",
     "Information on routes and stations is available from the information kiosk.",
     "Please help keep our metro clean, pick up your trash.",
     "Thank you for choosing the metro."
