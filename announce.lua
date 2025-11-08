@@ -17,14 +17,6 @@ local announcements = {
     "Thank you for choosing the metro."
 }
 
-local function playChime()
-    sleep(0.1)
-    chimeSpeaker.playNote("chime", 1, 5)
-    sleep(0.5)
-    chimeSpeaker.playNote("chime", 1, 1)
-    sleep(1)
-end
-
 local function announce(message)
     ttsSpeaker.setName(" ")
     ttsSpeaker.setNarrator("narrator")
@@ -42,7 +34,11 @@ end
 print("Announcement system started.")
 while true do
     local message = announcements[math.random(1, #announcements)]
-    playChime()
+    sleep(0.1)
+    chimeSpeaker.playNote("chime", 1, 5)
+    sleep(0.5)
+    chimeSpeaker.playNote("chime", 1, 1)
+    sleep(1)
     announceTime()
     sleep(3)
     announce(message)
