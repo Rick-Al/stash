@@ -10,7 +10,7 @@ if not ttsSpeaker then
 end
 
 local announcements = {
-    "The Green and Blue lines are closed for construction. Sun stone transit authority apologizes for any inconvenience. Thank you for your understanding.",
+    "The Green and Blue lines are closed for construction. The Sun stone transit authority apologizes for any inconvenience. Thank you for your understanding.",
     "The Sun stone transit authority would like to remind riders that fare evasion is a crime. see something, say something.",
     "Information on routes and stations is available from the information kiosk.",
     "Please help keep our metro clean, pick up your trash.",
