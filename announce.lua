@@ -43,7 +43,7 @@ while true do
     local message = announcements[math.random(1, #announcements)]
     playChime()
     announceTime()
-    sleep(0.5)
+    sleep(3)
     announce(message)
     sleep(60)
 end
