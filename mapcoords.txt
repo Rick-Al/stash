@@ -1,0 +1,15 @@
+-- screen coords for metro stations
+(1,1) -- Mt. Cam
+(4,1) -- Isle Jared
+(6,13) -- World Trade Center
+(17,3) -- Empire
+(20,13) -- Park St (Transfer)
+(30,13) -- Moonstone
+(33,17) -- Airport
+(13,20) -- Brick Blvd
+(20,20) -- Pokecenter
+(2,35) -- Dylan Castle
+(6,32) -- Industry
+(24,31) -- South Bay
+(23,36) -- East Chris
+(31,36) -- West Chris
