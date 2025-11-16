@@ -26,7 +26,7 @@ local stations = {
     { name="Park Street",          x=21, y=14, lines={"Red","Blue"},          radius=2 },
     { name="Moonstone",            x=31, y=14, lines={"Blue"},                radius=2 },
     { name="Aiport",               x=34, y=18, lines={"Blue"},                radius=2 },
-    { name="Brick Blvd",           x=13, y=21, lines={"Red"},                 radius=2 },
+    { name="Brick Blvd",           x=14, y=21, lines={"Red"},                 radius=2 },
     { name="Midtown",              x=21, y=21, lines={"Red"},                 radius=2 },
     { name="Dylan Castle",         x=3,  y=36, lines={"Green"},               radius=2 },
     { name="Industry",             x=7,  y=33, lines={"Red"},                 radius=2 },
