@@ -58,12 +58,12 @@ local function drawPopup(st)
     local boxW = 22
     local boxH = 5
     local boxX = math.floor((w - boxW) / 2)
-    local boxY = math.floor((h - boxH) / 2)
+    local boxY = math.floor((h - boxH) / 2) + 7
 
     -- Draw popup background
     mon.setBackgroundColor(colors.gray)
     mon.setTextColor(colors.black)
-    paintutils.drawFilledBox(boxX, boxY, boxX + boxW, boxY + boxH, colors.gray)
+    paintutils.drawFilledBox(boxX, boxY, boxX + boxW, boxY + boxH, colors.lightGray)
 
     -- Station name
     mon.setCursorPos(boxX + 1, boxY + 1)
