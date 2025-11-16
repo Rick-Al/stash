@@ -6,8 +6,8 @@ mon.setBackgroundColor(colors.black)
 mon.clear()
 
 -- Load the map image (map.nfp)
-local map = paintutils.loadImage("map.nfp")
-if not map then error("map.nfp not found") end
+local map = paintutils.loadImage("mapsmall.nfp")
+if not map then error("mapsmall.nfp not found") end
 
 local function drawMap()
     local old = term.redirect(mon)
