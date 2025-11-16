@@ -19,20 +19,20 @@ drawMap()
 
 -- Station list
 local stations = {
-    { name="Cam Mountain",         x=1,  y=1,  lines={"Green"},               radius=1 },
-    { name="Isle Jared",           x=4,  y=1,  lines={"Green"},               radius=1 },
-    { name="World Trade Center",   x=6,  y=13, lines={"Green","Red","Blue"},  radius=1 },
-    { name="Empire",               x=17, y=3,  lines={"Red"},                 radius=1 },
-    { name="Park Street",          x=20, y=13, lines={"Red","Blue"},          radius=1 },
-    { name="Moonstone",            x=30, y=13, lines={"Blue"},                radius=1 },
-    { name="Aiport",               x=33, y=17, lines={"Blue"},                radius=1 },
-    { name="Brick Blvd",           x=12, y=20, lines={"Red"},                 radius=1 },
-    { name="Midtown",              x=20, y=20, lines={"Red"},                 radius=1 },
-    { name="Dylan Castle",         x=2,  y=35, lines={"Green"},               radius=1 },
-    { name="Industry",             x=6,  y=32, lines={"Red"},                 radius=1 },
-    { name="South Side",           x=24, y=31, lines={"Blue"},                radius=1 },
-    { name="East Chris",           x=23, y=36, lines={"Blue"},                radius=1 },
-    { name="West Chris",           x=31, y=36, lines={"Blue"},                radius=1 },
+    { name="Cam Mountain",         x=2,  y=2,  lines={"Green"},               radius=2 },
+    { name="Isle Jared",           x=5,  y=2,  lines={"Green"},               radius=2 },
+    { name="World Trade Center",   x=7,  y=14, lines={"Green","Red","Blue"},  radius=2 },
+    { name="Empire",               x=18, y=4,  lines={"Red"},                 radius=2 },
+    { name="Park Street",          x=21, y=14, lines={"Red","Blue"},          radius=2 },
+    { name="Moonstone",            x=31, y=14, lines={"Blue"},                radius=2 },
+    { name="Aiport",               x=34, y=18, lines={"Blue"},                radius=2 },
+    { name="Brick Blvd",           x=13, y=21, lines={"Red"},                 radius=2 },
+    { name="Midtown",              x=21, y=21, lines={"Red"},                 radius=2 },
+    { name="Dylan Castle",         x=3,  y=36, lines={"Green"},               radius=2 },
+    { name="Industry",             x=7,  y=33, lines={"Red"},                 radius=2 },
+    { name="South Side",           x=25, y=32, lines={"Blue"},                radius=2 },
+    { name="East Chris",           x=24, y=37, lines={"Blue"},                radius=2 },
+    { name="West Chris",           x=32, y=37, lines={"Blue"},                radius=2 },
 }
 
 -- Color mapping for line names
