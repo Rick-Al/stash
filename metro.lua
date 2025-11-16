@@ -22,7 +22,7 @@ local function drawPrompt()
 
     local w, h = mon.getSize()
     local message = "Tap a station for more info."
-    mon.setCursorPos(math.floor((w - #message)/2), h) -- bottom center
+    mon.setCursorPos(math.floor((w - #message)/2), 1) -- top center
     mon.write(message)
 
     term.redirect(old)
@@ -59,7 +59,7 @@ local LINE_COLORS = {
 -- Draw station highlight
 local function highlight(st)
     local old = term.redirect(mon)
-    paintutils.drawPixel(st.x, st.y, colors.yellow)
+    paintutils.drawPixel(st.x, st.y, colors.orange)
     term.redirect(old)
 end
 
