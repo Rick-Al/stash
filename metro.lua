@@ -15,7 +15,21 @@ local function drawMap()
     term.redirect(old)
 end
 
+local function drawPrompt()
+    local old = term.redirect(mon)
+    mon.setBackgroundColor(colors.black)
+    mon.setTextColor(colors.white)
+
+    local w, h = mon.getSize()
+    local message = "Tap a station for more info"
+    mon.setCursorPos(math.floor((w - #message)/2), h) -- bottom center
+    mon.write(message)
+
+    term.redirect(old)
+end
+
 drawMap()
+drawPrompt()
 
 -- Station list
 local stations = {
@@ -88,8 +102,8 @@ end
 while true do
     local event, side, x, y = os.pullEvent("monitor_touch")
 
-    -- Clear popup and redraw map
-    drawMap()
+    drawMap()      -- refresh map
+    drawPrompt()   -- redraw message
 
     local tapped = false
 
