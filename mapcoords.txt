@@ -5,7 +5,7 @@ World Trade Center, 6, 13, {"Green", "Red", "Blue"}
 Empire, 17, 3, {"Red"}
 Park Street, 20, 13, {"Red", "Blue"}
 Moonstone, 30, 13, {"Blue"}
-Aiport, 33, 17, {"Blue"}
+Airport, 33, 17, {"Blue"}
 Brick Blvd, 12, 20, {"Red"}
 Midtown, 20, 20, {"Red"}
 Dylan Castle, 2, 35, {"Green"}
