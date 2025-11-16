@@ -116,8 +116,9 @@ end
 while true do
     local event, side, x, y = os.pullEvent("monitor_touch")
 
-    drawMap()      -- refresh map
-    drawPrompt()   -- redraw message
+    drawMap()
+    drawTitle()
+    drawPrompt()
 
     local tapped = false
 
