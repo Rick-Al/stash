@@ -17,11 +17,11 @@ end
 
 local function drawPrompt()
     local old = term.redirect(mon)
-    mon.setBackgroundColor(colors.black)
-    mon.setTextColor(colors.white)
+    mon.setBackgroundColor(colors.white)
+    mon.setTextColor(colors.orange)
 
     local w, h = mon.getSize()
-    local message = "Tap a station for more info"
+    local message = "Tap a station for more info."
     mon.setCursorPos(math.floor((w - #message)/2), h) -- bottom center
     mon.write(message)
 
