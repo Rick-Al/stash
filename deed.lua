@@ -139,10 +139,10 @@ local deedText =
     "\n" ..
     "Zoning: " .. zoneName .. "\n" ..
     "\n" ..
-    "Rate: " .. priceBronze .. " bronze per block\n" ..
+    "Rate: " .. priceBronze .. " bpb\n" ..
     "\n" ..
     "Total cost:\n" ..
-    string.format("  %d gold, %d silver, %d bronze\n", gold, silver, bronze) ..
+    string.format("  %d g, %d s, %d b\n", gold, silver, bronze) ..
     "\n" ..
     "Date issued: " .. dateStr .. "\n"
 
