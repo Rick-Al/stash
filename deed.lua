@@ -18,13 +18,6 @@ local function tonumber_or_nil(s)
 end
 
 -- currency helpers (work in bronze units)
-local function bronze_from_components(gold, silver, bronze)
-  gold = tonumber_or_nil(gold) or 0
-  silver = tonumber_or_nil(silver) or 0
-  bronze = tonumber_or_nil(bronze) or 0
-  return gold * 10000 + silver * 100 + bronze
-end
-
 local function breakdown_bronze(totalBronze)
   totalBronze = math.max(0, math.floor(totalBronze + 0.5))
   local gold = math.floor(totalBronze / 10000)
@@ -32,6 +25,16 @@ local function breakdown_bronze(totalBronze)
   local silver = math.floor(rem / 100)
   local bronze = rem % 100
   return gold, silver, bronze
+end
+
+local function format_currency(bronzeTotal)
+  local g, s, b = breakdown_bronze(bronzeTotal)
+  local parts = {}
+  if g > 0 then table.insert(parts, tostring(g) .. " gold") end
+  if s > 0 then table.insert(parts, tostring(s) .. " silver") end
+  if b > 0 then table.insert(parts, tostring(b) .. " bronze") end
+  if #parts == 0 then return "0 bronze" end
+  return table.concat(parts, ", ")
 end
 
 -- Pricing in bronze per block:
@@ -59,17 +62,7 @@ local function choose_zone()
   end
 end
 
-local function format_currency(bronzeTotal)
-  local g, s, b = breakdown_bronze(bronzeTotal)
-  local parts = {}
-  if g > 0 then table.insert(parts, tostring(g) .. " gold") end
-  if s > 0 then table.insert(parts, tostring(s) .. " silver") end
-  if b > 0 then table.insert(parts, tostring(b) .. " bronze") end
-  if #parts == 0 then return "0 bronze" end
-  return table.concat(parts, ", ")
-end
-
--- Compute inclusive area from coordinates
+-- Compute inclusive area from coordinates (Minecraft-style)
 local function area_from_coords(x1, z1, x2, z2)
   local w = math.abs(x2 - x1) + 1
   local h = math.abs(z2 - z1) + 1
@@ -94,59 +87,64 @@ local function build_deed(params)
   return table.concat(lines, "\n")
 end
 
--- Try to print to a connected printer peripheral (safe, pcall wrapped)
+-- Try to print to a connected printer peripheral.
+-- Returns: (true, "message") on success, (false, "error message") on failure.
 local function try_print_to_printer(text)
-  local ok, peripheral = pcall(function() return peripheral end) -- ensure peripheral exists in scope
-  if not ok then return false, "Peripheral library unavailable" end
+  -- ensure peripheral API exists
+  if not peripheral then
+    return false, "Peripheral API unavailable."
+  end
 
-  local name, pr = peripheral.find("printer")
-  if pr == nil then
-    -- try different search: peripheral.find returns peripheral object; some CC versions return only object
-    -- attempt to loop all peripherals
-    for k,v in pairs(peripheral.getNames and peripheral.getNames() or {}) do
-      if tostring(k):lower():find("printer") or tostring(v):lower():find("printer") then
-        pr = peripheral.wrap(v)
+  -- find a printer peripheral
+  local pr = peripheral.find("printer")
+  if not pr then
+    -- Sometimes modded printers expose a different type name; scan all peripherals for "printer" in name
+    for _, name in ipairs(peripheral.getNames()) do
+      if tostring(name):lower():find("printer") then
+        pr = peripheral.wrap(name)
         break
       end
     end
   end
 
-  if pr == nil then return false, "No printer peripheral found" end
-
-  -- Attempt to print via a few common printer methods (wrapped in pcall to avoid crash)
-  local printed = false
-  local errMessages = {}
-
-  -- Most common: pr.print(text) works
-  local s, e = pcall(function() pr.print(text) end)
-  if s then printed = true else table.insert(errMessages, "pr.print: "..tostring(e)) end
-
-  -- If printing via pr.print failed, try writing line-by-line using write/print, or newPage if available
-  if not printed then
-    -- Try newPage/print per-line
-    local s2, e2 = pcall(function()
-      if pr.newPage then
-        pr.newPage()
-      end
-      for line in text:gmatch("[^\n]+") do
-        if pr.write then
-          pr.write(line)
-        elseif pr.print then
-          pr.print(line)
-        else
-          -- fallback: try pr.queue or pr.addLine
-          if pr.queue then pr.queue(line) end
-        end
-      end
-      if pr.endJob then pcall(pr.endJob) end
-    end)
-    if s2 then printed = true else table.insert(errMessages, "fallback printing: "..tostring(e2)) end
+  if not pr then
+    return false, "No printer peripheral found."
   end
 
-  if printed then
+  -- perform printing safely using pcall for each action
+  local ok, err = pcall(function()
+    -- Some printers support printer.newPage() + printer.write()/printer.endJob()
+    -- Others support printer.print(text)
+    if pr.print then
+      -- If print exists, use it for whole text (some printers expect a single string)
+      pr.print(text)
+      return
+    end
+
+    -- fallback: try per-line write
+    if pr.newPage then
+      pr.newPage()
+    end
+
+    for line in text:gmatch("[^\n]+") do
+      if pr.write then
+        pr.write(line)
+      elseif pr.print then
+        pr.print(line)
+      else
+        -- try queue/addLine style methods if available
+        if pr.queue then pr.queue(line) end
+        if pr.addLine then pr.addLine(line) end
+      end
+    end
+
+    if pr.endJob then pr.endJob() end
+  end)
+
+  if ok then
     return true, "Printed to printer peripheral."
   else
-    return false, table.concat(errMessages, " | ")
+    return false, "Printer error: " .. tostring(err)
   end
 end
 
@@ -159,17 +157,17 @@ local address = prompt("Enter address")
 -- Coordinates input (re-prompt until valid numbers)
 local x1,z1,x2,z2
 while true do
-  io.write("Enter x1: ")
+  io.write("Enter x1 (X coordinate): ")
   x1 = tonumber(read())
-  io.write("Enter z1: ")
+  io.write("Enter z1 (Z coordinate): ")
   z1 = tonumber(read())
-  io.write("Enter x2: ")
+  io.write("Enter x2 (X coordinate): ")
   x2 = tonumber(read())
-  io.write("Enter z2: ")
+  io.write("Enter z2 (Z coordinate): ")
   z2 = tonumber(read())
 
   if x1 and z1 and x2 and z2 then break end
-  print("Invalid coordinate(s). Please enter numeric values for x1, z1, x2, z2.")
+  print("Invalid coordinate(s). Please enter numeric values (negative allowed).")
 end
 
 local zone = choose_zone()
@@ -207,29 +205,14 @@ print("Zone: " .. zone)
 print("Total cost: " .. format_currency(params.totalPriceBronze))
 print("----------------\n")
 
--- Attempt to print to printer
-local ok, msg = pcall(function() return try_print_to_printer(deedText) end)
-if ok then
-  local success, info = msg[1], msg[2]  -- try_print_to_printer returns (bool, string) ; pcall wraps return in table
-  -- but because of pcall wrap, msg might be the return; handle both
-  if type(msg) == "table" and msg[1] ~= nil then
-    success = msg[1]
-    info = msg[2]
-  else
-    success = msg
-    info = ""
-  end
-
-  if success then
-    print("Deed sent to printer (peripheral).")
-  else
-    print("Printer attempt failed or no printer found. Showing deed on screen instead.\n")
-    print(deedText)
-  end
+-- Attempt to print to printer (no pcall wrapper here; function handles its own protection)
+local success, info = try_print_to_printer(deedText)
+if success then
+  print("Deed sent to printer: " .. info)
 else
-  -- pcall failed (shouldn't), fallback to show deed
-  print("Printer attempt caused error; showing deed on screen.\n")
+  print("Printer unavailable or failed: " .. info)
+  print("\nShowing deed on screen instead:\n")
   print(deedText)
 end
 
-print("\nDone. (If you have an attached printer and it didn't print, check peripheral wiring and printer paper/ink.)")
+print("\nDone. (If attached printer didn't print, check peripheral wiring and printer paper/ink.)")
