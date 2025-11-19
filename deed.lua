@@ -121,7 +121,7 @@ local totalBronze = area * priceBronze
 local gold, silver, bronze = convertBronze(totalBronze)
 
 -- date
-local dateStr = os.date(%B %e %Y)
+local dateStr = os.date("%B %e %Y")
 
 -- build deed text
 local deedText =
