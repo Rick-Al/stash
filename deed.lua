@@ -139,7 +139,8 @@ local confirm = read()
 
 if confirm:lower() ~= "y" then
     print("Canceled. No deed printed.")
-    sleep(2)
+    sleep(3)
+    os.reboot()
     return
 end
 
