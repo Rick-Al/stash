@@ -21,21 +21,20 @@ local function wrapLine(line, maxWidth)
 end
 
 -- printing
-local function try_print_to_printer(text, address)
+local function try_print_to_printer(lines, address)
     local pr = peripheral.find("printer")
     if not pr then
         return false, "No printer found."
     end
 
     if not pr.newPage() then
-        return false, "Unable to start a page (paper or ink missing)."
+        return false, "Unable to start a new page (paper or ink missing)."
     end
 
     pr.setPageTitle(address or "Land Deed")
 
-    local maxWidth = 26
-    local cursorX = 1
-    local cursorY = 1
+    local maxWidth = 25
+    local cursorX, cursorY = 1, 1
 
     local function printLine(str)
         pr.setCursorPos(cursorX, cursorY)
@@ -50,10 +49,10 @@ local function try_print_to_printer(text, address)
         end
     end
 
-    for line in text:gmatch("[^\n]+") do
+    for _, line in ipairs(lines) do
         local wrapped = wrapLine(line, maxWidth)
-        for _, segment in ipairs(wrapped) do
-            printLine(segment)
+        for _, chunk in ipairs(wrapped) do
+            printLine(chunk)
         end
     end
 
@@ -124,30 +123,31 @@ local gold, silver, bronze = convertBronze(totalBronze)
 local dateStr = os.date("%b %e %Y")
 
 -- build deed text
-local deedText =
-    " OFFICIAL DEED FOR LAND \n" ..
-    "\n" ..
-    "Owner: " .. owner .. "\n" ..
-    "\n" ..
-    "Address: " .. address .. "\n" ..
-    "\n" ..
-    string.format("Coords: (%d,%d) to (%d,%d)\n", x1, z1, x2, z2) ..
-    "\n" ..
-    string.format("Size: %d x %d\n", width, height) ..
-    "\n" ..
-    "Area: " .. area .. " sqB\n" ..
-    "\n" ..
-    "Zoning: " .. zoneName .. "\n" ..
-    "\n" ..
-    "Rate: " .. priceBronze .. " bpb\n" ..
-    "\n" ..
-    "Total cost:\n" ..
-    string.format("  %d g, %d s, %d b\n", gold, silver, bronze) ..
-    "\n" ..
-    "Date issued: " .. dateStr .. "\n"
+local deedText = {
+    " OFFICIAL DEED FOR LAND ",
+    "",
+    "Owner: " .. owner,
+    "",
+    "Address: " .. address,
+    "",
+    string.format("Coords: (%d,%d) to (%d,%d)", x1, z1, x2, z2),
+    "",
+    string.format("Size: %d x %d", width, height),
+    "",
+    "Area: " .. area .. " sqB",
+    "",
+    "Zoning: " .. zoneName,
+    "",
+    "Rate: " .. priceBronze .. " bronze per block",
+    "",
+    "Total cost:",
+    string.format("%d gold, %d silver, %d bronze", gold, silver, bronze),
+    "",
+    "Date issued: " .. dateStr
+}
 
 -- print deed
-print("\nPrinting deed...")
+print("Printing deed...")
 
 local ok, msg = try_print_to_printer(deedText, address)
 if ok then
@@ -156,6 +156,6 @@ else
     print("ERROR: " .. msg)
 end
 
-print("\nDone.")
+print("Done.")
 sleep(3)
 os.reboot()
