@@ -1,4 +1,4 @@
--- Convert total bronze into bronze/silver/gold tables
+-- currency
 local function convertBronze(totalBronze)
     local gold = math.floor(totalBronze / 10000)
     totalBronze = totalBronze % 10000
@@ -9,7 +9,7 @@ local function convertBronze(totalBronze)
     return gold, silver, bronze
 end
 
--- Word wrap utility
+-- wrap
 local function wrapLine(line, maxWidth)
     local out = {}
     while #line > maxWidth do
@@ -20,7 +20,7 @@ local function wrapLine(line, maxWidth)
     return out
 end
 
--- Printer output with wrapping
+-- printing
 local function try_print_to_printer(text, address)
     local pr = peripheral.find("printer")
     if not pr then
@@ -28,16 +28,32 @@ local function try_print_to_printer(text, address)
     end
 
     if not pr.newPage() then
-        return false, "Unable to start page. (Ink or paper?)"
+        return false, "Unable to start a page (paper or ink missing)."
     end
 
     pr.setPageTitle(address or "Land Deed")
 
+    local maxWidth = 26
+    local cursorX = 1
+    local cursorY = 1
+
+    local function printLine(str)
+        pr.setCursorPos(cursorX, cursorY)
+        pr.write(str)
+        cursorY = cursorY + 1
+
+        if cursorY > 21 then
+            pr.endPage()
+            pr.newPage()
+            pr.setPageTitle(address or "Land Deed")
+            cursorY = 1
+        end
+    end
+
     for line in text:gmatch("[^\n]+") do
-        local wrapped = wrapLine(line, 26)
+        local wrapped = wrapLine(line, maxWidth)
         for _, segment in ipairs(wrapped) do
-            pr.write(segment)
-            pr.write("\n")
+            printLine(segment)
         end
     end
 
@@ -45,35 +61,37 @@ local function try_print_to_printer(text, address)
     return true, "Printed successfully."
 end
 
--- MAIN
+-- main
 term.clear()
 term.setCursorPos(1,1)
-print("=== LAND DEED CREATOR ===")
+print("City of Sun Stone Shores Auto Deed Kiosk")
+print()
 
--- Collect user info
 write("Owner name: ")
 local owner = read()
 
-write("Address / Lot name: ")
+write("Address or Lot name: ")
 local address = read()
 
-print("\nEnter coordinates (inclusive area):")
+print("")
+print("Enter coordinates (X and Z only): ")
 write("X1: ") local x1 = tonumber(read())
 write("Z1: ") local z1 = tonumber(read())
 write("X2: ") local x2 = tonumber(read())
 write("Z2: ") local z2 = tonumber(read())
 
--- Dimensions
+-- dimensions
 local width = math.abs(x2 - x1) + 1
 local height = math.abs(z2 - z1) + 1
 local area = width * height
 
--- Zoning selection
-print("\nZoning Types:")
+-- zoning
+print("")
+print("Zoning Types:")
 print("1) Commercial (1 silver/block)")
 print("2) Residential (75 bronze/block)")
 print("3) Industrial (1s 25b/block)")
-print("4) Public (FREE)")
+print("4) Public")
 
 write("Select zoning type (1-4): ")
 local zoneChoice = tonumber(read())
@@ -83,51 +101,51 @@ local priceBronze = 0
 
 if zoneChoice == 1 then
     zoneName = "Commercial"
-    priceBronze = 100 -- 1 silver = 100 bronze
+    priceBronze = 100 -- 1 silver
 elseif zoneChoice == 2 then
     zoneName = "Residential"
     priceBronze = 75
 elseif zoneChoice == 3 then
     zoneName = "Industrial"
-    priceBronze = 125 -- 1s25b = 100 + 25
+    priceBronze = 125 -- 1 silver (100) + 25 bronze
 elseif zoneChoice == 4 then
     zoneName = "Public"
     priceBronze = 0
 else
-    print("Invalid choice! Exiting.")
+    print("Invalid zoning choice.")
     return
 end
 
+-- price calculation
 local totalBronze = area * priceBronze
 local gold, silver, bronze = convertBronze(totalBronze)
 
--- Date
+-- date
 local dateStr = textutils.formatTime(os.time(), false)
 
--- Create deed text
-local deedText = ""
-    .. "----------- DEED -----------\n"
-    .. "Owner: " .. owner .. "\n"
-    .. "Address: " .. address .. "\n"
-    .. string.format("Coords: (%d,%d) to (%d,%d)\n", x1, z1, x2, z2)
-    .. string.format("Size: %d x %d blocks\n", width, height)
-    .. "Area: " .. area .. " blocks\n"
-    .. "Zoning: " .. zoneName .. "\n"
-    .. "Price per block: " .. priceBronze .. " bronze\n"
-    .. "Total cost:\n"
-    .. string.format("  %d gold, %d silver, %d bronze\n", gold, silver, bronze)
-    .. "Date issued: " .. dateStr .. "\n"
-    .. "----------------------------\n"
+-- build deed text
+local deedText =
+    "----------- DEED -----------\n" ..
+    "Owner: " .. owner .. "\n" ..
+    "Address: " .. address .. "\n" ..
+    string.format("Coords: (%d,%d) to (%d,%d)\n", x1, z1, x2, z2) ..
+    string.format("Size: %d x %d blocks\n", width, height) ..
+    "Area: " .. area .. " blocks\n" ..
+    "Zoning: " .. zoneName .. "\n" ..
+    "Price per block: " .. priceBronze .. " bronze\n" ..
+    "Total cost:\n" ..
+    string.format("  %d gold, %d silver, %d bronze\n", gold, silver, bronze) ..
+    "Date issued: " .. dateStr .. "\n" ..
+    "----------------------------\n"
 
-
--- Print deed
+-- print deed
 print("\nPrinting deed...")
-local ok, msg = try_print_to_printer(deedText, address)
 
+local ok, msg = try_print_to_printer(deedText, address)
 if ok then
     print("Success: " .. msg)
 else
-    print("Error: " .. msg)
+    print("ERROR: " .. msg)
 end
 
 print("\nDone.")
