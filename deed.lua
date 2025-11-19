@@ -89,63 +89,34 @@ end
 
 -- Try to print to a connected printer peripheral.
 -- Returns: (true, "message") on success, (false, "error message") on failure.
-local function try_print_to_printer(text)
-  -- ensure peripheral API exists
+local function try_print_to_printer(text, address)
   if not peripheral then
     return false, "Peripheral API unavailable."
   end
 
-  -- find a printer peripheral
   local pr = peripheral.find("printer")
   if not pr then
-    -- Sometimes modded printers expose a different type name; scan all peripherals for "printer" in name
-    for _, name in ipairs(peripheral.getNames()) do
-      if tostring(name):lower():find("printer") then
-        pr = peripheral.wrap(name)
-        break
-      end
-    end
+    return false, "No printer found."
   end
 
-  if not pr then
-    return false, "No printer peripheral found."
+  -- Begin printing
+  if not pr.newPage() then
+    return false, "Printer could not start a new page (no paper or no ink?)."
   end
 
-  -- perform printing safely using pcall for each action
-  local ok, err = pcall(function()
-    -- Some printers support printer.newPage() + printer.write()/printer.endJob()
-    -- Others support printer.print(text)
-    if pr.print then
-      -- If print exists, use it for whole text (some printers expect a single string)
-      pr.print(text)
-      return
-    end
+  -- Dynamic page title based on the address
+  pr.setPageTitle(address or "Land Deed")
 
-    -- fallback: try per-line write
-    if pr.newPage then
-      pr.newPage()
-    end
-
-    for line in text:gmatch("[^\n]+") do
-      if pr.write then
-        pr.write(line)
-      elseif pr.print then
-        pr.print(line)
-      else
-        -- try queue/addLine style methods if available
-        if pr.queue then pr.queue(line) end
-        if pr.addLine then pr.addLine(line) end
-      end
-    end
-
-    if pr.endJob then pr.endJob() end
-  end)
-
-  if ok then
-    return true, "Printed to printer peripheral."
-  else
-    return false, "Printer error: " .. tostring(err)
+  -- Write text line-by-line (printers only support ~25 chars per line)
+  for line in text:gmatch("[^\n]+") do
+    pr.write(line)
+    pr.write("\n")
   end
+
+  pr.endPage()  -- finalize the page
+  pr.endJob()   -- eject printed page
+
+  return true, "Printed successfully."
 end
 
 -- MAIN
@@ -206,7 +177,7 @@ print("Total cost: " .. format_currency(params.totalPriceBronze))
 print("----------------\n")
 
 -- Attempt to print to printer (no pcall wrapper here; function handles its own protection)
-local success, info = try_print_to_printer(deedText)
+local success, info = try_print_to_printer(deedText, params.address)
 if success then
   print("Deed sent to printer: " .. info)
 else
