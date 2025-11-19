@@ -121,29 +121,29 @@ local totalBronze = area * priceBronze
 local gold, silver, bronze = convertBronze(totalBronze)
 
 -- date
-local dateStr = os.date("%B %e %Y")
+local dateStr = os.date("%b %e %Y")
 
 -- build deed text
 local deedText =
     " OFFICIAL DEED FOR LAND \n" ..
-    "" ..
+    "\n" ..
     "Owner: " .. owner .. "\n" ..
-    "" ..
+    "\n" ..
     "Address: " .. address .. "\n" ..
-    "" ..
+    "\n" ..
     string.format("Coords: (%d,%d) to (%d,%d)\n", x1, z1, x2, z2) ..
-    "" ..
+    "\n" ..
     string.format("Size: %d x %d\n", width, height) ..
-    "" ..
+    "\n" ..
     "Area: " .. area .. " sqB\n" ..
-    "" ..
+    "\n" ..
     "Zoning: " .. zoneName .. "\n" ..
-    "" ..
-    "Price per block: " .. priceBronze .. " b\n" ..
-    "" ..
+    "\n" ..
+    "Rate: " .. priceBronze .. " bronze per block\n" ..
+    "\n" ..
     "Total cost:\n" ..
-    string.format("  %d g, %d s, %d b\n", gold, silver, bronze) ..
-    "" ..
+    string.format("  %d gold, %d silver, %d bronze\n", gold, silver, bronze) ..
+    "\n" ..
     "Date issued: " .. dateStr .. "\n"
 
 -- print deed
