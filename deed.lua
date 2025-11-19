@@ -104,17 +104,17 @@ local function try_print_to_printer(text, address)
     return false, "Printer could not start a new page (no paper or no ink?)."
   end
 
-  -- Dynamic page title based on the address
+  -- Dynamic title
   pr.setPageTitle(address or "Land Deed")
 
-  -- Write text line-by-line (printers only support ~25 chars per line)
+  -- Write text line-by-line
   for line in text:gmatch("[^\n]+") do
     pr.write(line)
     pr.write("\n")
   end
 
-  pr.endPage()  -- finalize the page
-  pr.endJob()   -- eject printed page
+  -- FINALIZE AND EJECT PAGE
+  pr.endPage()
 
   return true, "Printed successfully."
 end
