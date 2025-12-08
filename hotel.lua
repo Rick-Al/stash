@@ -9,14 +9,14 @@ local letters = { h, o, t, e, l }
 -- Helper: turn all letters off
 local function allOff()
     for _, relay in ipairs(letters) do
-        relay.setOutput("front", false)
+        relay.setOutput("top", false)
     end
 end
 
 -- Helper: turn all letters on
 local function allOn()
     for _, relay in ipairs(letters) do
-        relay.setOutput("front", true)
+        relay.setOutput("top", true)
     end
 end
 
@@ -24,21 +24,21 @@ end
 while true do
     -- Sequentially light each letter
     for _, relay in ipairs(letters) do
-        relay.setOutput("front", true)
-        sleep(0.3)  -- delay between letters
+        relay.setOutput("top", true)
+        sleep(2)  -- delay between letters
     end
 
-    sleep(0.5)
+    sleep(1)
 
     -- Flash whole sign twice
     for i = 1, 2 do
         allOff()
-        sleep(0.25)
+        sleep(0.5)
         allOn()
-        sleep(0.25)
+        sleep(0.5)
     end
 
     -- Turn off before looping
     allOff()
-    sleep(0.5)
+    sleep(1)
 end
