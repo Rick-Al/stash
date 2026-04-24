@@ -1,8 +1,12 @@
 local sensor = peripheral.find("gimbal_sensor")
+local velocitySensor = peripheral.find("velocity_sensor")
+local altitudeSensor = peripheral.find("altitude_sensor")
 local monitor = peripheral.find("monitor")
 
-if not sensor then error("No gimbal sensor found") end
-if not monitor then error("No monitor found") end
+if not sensor then error("Missing gimbal_sensor") end
+if not velocitySensor then error("Missing velocity_sensor") end
+if not altitudeSensor then error("Missing altitude_sensor") end
+if not monitor then error("Missing monitor") end
 
 monitor.setTextScale(0.5)
 
@@ -93,6 +97,31 @@ function drawPitchLadder(pitch, roll, horizonBase)
             end
         end
     end
+end
+
+local function getAirspeed()
+    return velocitySensor.getVelocity() or 0
+end
+
+local function getAltitude()
+    return altitudeSensor.getHeight() or 0
+end
+
+local function drawHUD()
+    local speed = getAirspeed()
+    local altitude = getAltitude()
+
+    monitor.setBackgroundColor(colors.black)
+    monitor.setTextColor(colors.white)
+
+    -- Airspeed (top-left)
+    monitor.setCursorPos(2, 2)
+    monitor.write(string.format("IAS: %.1f m/s", speed))
+
+    -- Altitude (top-right)
+    local altText = string.format("ALT: %.0f m", altitude)
+    monitor.setCursorPos(w - #altText - 1, 2)
+    monitor.write(altText)
 end
 
 while true do
