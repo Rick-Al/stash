@@ -3,6 +3,10 @@ local velocitySensor = peripheral.find("velocity_sensor")
 local altitudeSensor = peripheral.find("altitude_sensor")
 local monitor = peripheral.find("monitor")
 
+local lastAlt = nil
+local lastTime = os.clock()
+local vsi = 0
+
 if not sensor then error("Missing gimbal_sensor") end
 if not velocitySensor then error("Missing velocity_sensor") end
 if not altitudeSensor then error("Missing altitude_sensor") end
@@ -99,6 +103,47 @@ function drawPitchLadder(pitch, roll, horizonBase)
     end
 end
 
+local function updateVSI(altitude)
+    local t = os.clock()
+
+    if lastAlt then
+        local dt = t - lastTime
+        if dt > 0 then
+            vsi = (altitude - lastAlt) / dt
+        end
+    end
+
+    lastAlt = altitude
+    lastTime = t
+
+    return vsi
+end
+
+local function drawSpeedTape(speed)
+    local centerX = 4
+    local centerY = math.floor(h / 2)
+
+    local range = 20  -- m/s above/below center
+    local step = 5
+
+    monitor.setTextColor(colors.white)
+    monitor.setBackgroundColor(colors.black)
+
+    for offset = -range, range, step do
+        local value = speed + offset
+        local y = centerY - offset
+
+        if y >= 1 and y <= h then
+            monitor.setCursorPos(centerX, y)
+            monitor.write(string.format("%3d", value))
+        end
+    end
+
+    -- current speed marker
+    monitor.setCursorPos(1, centerY)
+    monitor.write(">")
+end
+
 local function getAirspeed()
     return velocitySensor.getVelocity() or 0
 end
@@ -107,21 +152,48 @@ local function getAltitude()
     return altitudeSensor.getHeight() or 0
 end
 
-local function drawHUD()
-    local speed = getAirspeed()
-    local altitude = getAltitude()
+local function drawAltitudeTape(altitude)
+    local centerX = w - 8
+    local centerY = math.floor(h / 2)
 
+    local range = 50  -- meters above/below center
+    local step = 10
+
+    monitor.setTextColor(colors.white)
+    monitor.setBackgroundColor(colors.black)
+
+    for offset = -range, range, step do
+        local value = altitude + offset
+        local y = centerY - math.floor(offset / 2)
+
+        if y >= 1 and y <= h then
+            monitor.setCursorPos(centerX, y)
+            monitor.write(string.format("%4d", value))
+        end
+    end
+
+    -- current altitude marker
+    monitor.setCursorPos(w - 10, centerY)
+    monitor.write("<")
+end
+
+local function drawVSI(vsiValue)
     monitor.setBackgroundColor(colors.black)
     monitor.setTextColor(colors.white)
 
-    -- Airspeed (top-left)
-    monitor.setCursorPos(2, 2)
-    monitor.write(string.format("IAS: %.1f m/s", speed))
+    monitor.setCursorPos(math.floor(w / 2) - 5, 2)
+    monitor.write(string.format("VSI: %+0.2f m/s", vsiValue))
+end
 
-    -- Altitude (top-right)
-    local altText = string.format("ALT: %.0f m", altitude)
-    monitor.setCursorPos(w - #altText - 1, 2)
-    monitor.write(altText)
+local function drawHUD()
+    local speed = velocitySensor.getVelocity() or 0
+    local altitude = altitudeSensor.getHeight() or 0
+
+    local vsiValue = updateVSI(altitude)
+
+    drawSpeedTape(speed)
+    drawAltitudeTape(altitude)
+    drawVSI(vsiValue)
 end
 
 while true do
