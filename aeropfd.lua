@@ -54,7 +54,7 @@ local function drawHorizon(pitch, roll)
 end
 
 while true do
-    local xRot, yRot, zRot = sensor.getRotation()
+    local xRot, zRot = sensor.getAngles()
 
     local pitch = xRot
     local roll = zRot
