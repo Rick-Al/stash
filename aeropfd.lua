@@ -14,7 +14,7 @@ local ROLL_SCALE  = 0.08  -- horizon tilt per x-offset
 
 -- colors
 local SKY    = colors.lightBlue
-local GROUND = colors.brown
+local GROUND = colors.orange
 local HORIZON = colors.white
 
 local function drawPixel(x, y, color)
