@@ -1,66 +1,53 @@
 local sensor = peripheral.find("gimbal_sensor")
+local monitor = peripheral.find("monitor")
 
-if not sensor then
-    error("No gimbal sensor found")
-end
+if not sensor then error("No gimbal sensor found") end
+if not monitor then error("No monitor found") end
 
-local w, h = term.getSize()
+monitor.setTextScale(0.5)
 
-local centerX = math.floor(w / 2)
-local centerY = math.floor(h / 2)
+local width, height = monitor.getSize()
 
--- tweak these
-local pitchScale = 0.15
-local rollScale = 0.04
-
-local function normalize(angle)
-    if angle > 180 then
-        return angle - 360
-    end
-    return angle
-end
-
-local function clear()
-    term.setBackgroundColor(colors.black)
-    term.clear()
-end
+-- tuning constants
+local PITCH_SCALE = 2     -- how sensitive pitch is
+local ROLL_SCALE  = 1     -- how sensitive roll is
 
 local function drawHorizon(pitch, roll)
-    -- convert pitch into vertical offset
-    local baseY = centerY + pitch * pitchScale
+    monitor.clear()
 
-    for x = 1, w do
-        local offset = (x - centerX) * roll * rollScale
-        local y = math.floor(baseY + offset)
+    -- convert sensor values
+    local pitchOffset = math.floor(pitch * PITCH_SCALE)
+    local rollOffset = math.floor(roll * ROLL_SCALE)
 
-        -- draw sky + ground
-        for yy = 1, h do
-            term.setCursorPos(x, yy)
+    local centerY = math.floor(height / 2) + pitchOffset
 
-            if yy < y then
-                term.setBackgroundColor(colors.blue)   -- sky
+    for y = 1, height do
+        for x = 1, width do
+
+            -- simple roll effect: shift horizon diagonally
+            local horizonY = centerY + math.floor((x - width/2) * roll * 0.1)
+
+            if y < horizonY then
+                monitor.setCursorPos(x, y)
+                monitor.write(" ") -- sky (could color blue if using colors)
             else
-                term.setBackgroundColor(colors.brown)  -- ground
+                monitor.setCursorPos(x, y)
+                monitor.write(" ") -- ground
             end
-
-            term.write(" ")
-        end
-
-        -- draw horizon line
-        if y >= 1 and y <= h then
-            term.setCursorPos(x, y)
-            term.setBackgroundColor(colors.white)
-            term.write(" ")
         end
     end
+
+    -- center indicator
+    monitor.setCursorPos(math.floor(width/2), math.floor(height/2))
+    monitor.write("+")
 end
 
 while true do
     local angles = sensor.getAngles()
-    local pitch = normalize(angles[1])
-    local roll  = normalize(angles[2])
 
-    clear()
+    local pitch = angles[1]
+    local roll  = angles[2]
+
     drawHorizon(pitch, roll)
 
     sleep(0.05)
