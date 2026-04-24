@@ -9,7 +9,7 @@ monitor.setTextScale(0.5)
 local w, h = monitor.getSize()
 
 -- tuning
-local PITCH_SCALE = 1.2   -- pixels per degree
+local PITCH_SCALE = 0.08   -- pixels per degree
 local ROLL_SCALE  = 0.08  -- horizon tilt per x-offset
 
 -- colors
