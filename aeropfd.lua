@@ -131,7 +131,7 @@ while true do
     local pitch  = -angles[2]
 
     drawHorizon(pitch, roll)
-    drawHud()
+    drawHUD()
 
     sleep(0.05)
 end
