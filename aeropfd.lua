@@ -98,8 +98,8 @@ end
 while true do
     local angles = sensor.getAngles()
 
-    local pitch = angles[1]
-    local roll  = angles[2]
+    local roll = angles[1]
+    local pitch  = -angles[2]
 
     drawHorizon(pitch, roll)
 
